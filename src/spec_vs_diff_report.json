@@ -1,0 +1,71 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-12T12:30:25.351Z",
+  "summary": "REQ-35 asks for a rebuild/redeploy with no functional changes. The diff shows substantial backend and frontend behavior changes (new/expanded message fields, media handling, clipboard paste attachment, upload progress, room validation UX states), which goes beyond an as-is rebuild. The diff alone cannot demonstrate successful compilation/deployment or absence of runtime errors.",
+  "missing_requirements": [
+    {
+      "id": "REQ-35",
+      "requirement": "Rebuild and redeploy the existing application as-is (no functional changes), ensuring the frontend and backend compile successfully and the deployed app loads without runtime errors.",
+      "reason": "The changes shown introduce/alter functional behavior rather than being a no-op rebuild/redeploy. Also, compilation/deploy success and runtime-error-free behavior cannot be confirmed from code changes alone in this diff summary.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/features/chat/components/MessageComposer.tsx",
+        "frontend/src/features/chat/components/MessageItem.tsx",
+        "frontend/src/features/chat/RoomPage.tsx"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Clipboard paste-to-attach file support in the message composer (including toasts and limiting to a single file).",
+      "reason": "Not requested; BuildRequest explicitly says rebuild/redeploy without feature changes.",
+      "evidence": [
+        "frontend/src/features/chat/components/MessageComposer.tsx"
+      ]
+    },
+    {
+      "description": "File upload progress tracking/UI state for message sending (uploadProgress, isUploading, progress updates).",
+      "reason": "Not requested; constitutes new/changed behavior beyond rebuild-only scope.",
+      "evidence": [
+        "frontend/src/features/chat/components/MessageComposer.tsx"
+      ]
+    },
+    {
+      "description": "Client-side media MIME-type detection via magic-number heuristics and creation of blob URLs for inline display.",
+      "reason": "Not requested; adds/changes media rendering behavior.",
+      "evidence": [
+        "frontend/src/features/chat/components/MessageItem.tsx"
+      ]
+    },
+    {
+      "description": "Media download handling via dynamically created anchor element (download action).",
+      "reason": "Not requested; adds/changes user-facing functionality.",
+      "evidence": [
+        "frontend/src/features/chat/components/MessageItem.tsx"
+      ]
+    },
+    {
+      "description": "New/expanded room validation UX states in RoomPage (connecting state, validating room loading state, validation error with retry, room-not-found view).",
+      "reason": "Not requested; changes user flow/UX beyond rebuild-only scope.",
+      "evidence": [
+        "frontend/src/features/chat/RoomPage.tsx"
+      ]
+    },
+    {
+      "description": "Backend data model and API expansion/changes: Message includes media, reactions, replyTo; new/changed methods for posting/editing/deleting messages; inclusion of blob-storage mixin.",
+      "reason": "Not requested; indicates functional changes rather than a rebuild-only adjustment.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "confidence": 0.72,
+  "changed_files": [
+    "backend/main.mo",
+    "frontend/src/features/chat/RoomPage.tsx",
+    "frontend/src/features/chat/components/MessageComposer.tsx",
+    "frontend/src/features/chat/components/MessageItem.tsx",
+    "project_state.json"
+  ]
+}

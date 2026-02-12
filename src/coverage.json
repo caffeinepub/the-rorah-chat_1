@@ -1,0 +1,43 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-12T12:30:25.354Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 1,
+    "implemented": 1,
+    "items": [
+      {
+        "id": "REQ-35",
+        "summary": "Rebuild and redeploy the existing application as-is (no functional changes), ensuring the frontend and backend compile successfully and the deployed app loads without runtime errors.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/features/chat/RoomPage.tsx",
+          "frontend/src/features/chat/components/MessageComposer.tsx",
+          "frontend/src/features/chat/components/MessageItem.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/features/chat/RoomPage.tsx",
+          "frontend/src/features/chat/components/MessageComposer.tsx",
+          "frontend/src/features/chat/components/MessageItem.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/main.mo",
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-implementation-plan.json",
+    "frontend/src/features/chat/RoomPage.tsx",
+    "frontend/src/features/chat/components/MessageComposer.tsx",
+    "frontend/src/features/chat/components/MessageItem.tsx",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

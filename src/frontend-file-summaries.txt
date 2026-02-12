@@ -1,0 +1,14 @@
+{
+  "frontend/src/App.tsx": "Main application component managing routing between lobby and room views with header, theme toggle, and footer that is conditionally hidden when inside a chat room.",
+  "frontend/src/components/ThemeToggle.tsx": "Theme toggle dropdown component that allows users to switch between light, dark, and system themes using next-themes.",
+  "frontend/src/hooks/useLocalProfile.ts": "Custom hook that manages anonymous user profile (userId and nickname) persisted in localStorage for authentication-free chat.",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks for all backend operations with useValidateRoom now properly exposing error state, refetch capability, and retry disabled to surface validation failures immediately.",
+  "frontend/src/features/lobby/LobbyPage.tsx": "Lobby page with create/join room tabs that distinguishes between validation errors (with inline Alert and Retry button) and definitive \"Room not found\" responses, showing user-facing error messages without page refresh.",
+  "frontend/src/features/chat/RoomPage.tsx": "Chat room page that shows a dedicated validation error screen with Retry and Back to Lobby buttons when validateRoom fails unexpectedly, distinct from the existing Room Not Found screen for definitive false results, and properly passes all required props to MessageItem and MessageComposer components.",
+  "frontend/src/features/chat/components/MessageComposer.tsx": "Message input component supporting text and any file type uploads via file picker or clipboard paste, with 5MB size limit, progress tracking, reply context display, and multi-file paste handling with toast notifications.",
+  "frontend/src/features/chat/components/MessageItem.tsx": "Individual message component with sent/received styling, MIME type detection from byte headers, inline previews for images/videos, downloadable attachment blocks for other files, edit/delete actions, reply quotes, and reaction bar with proper blob URL lifecycle management.",
+  "frontend/src/features/chat/reactions/ReactionBar.tsx": "Reaction picker and display component showing emoji reactions with counts and popover interface for adding new reactions.",
+  "frontend/src/index.css": "Global styles with OKLCH color system defining light/dark themes and custom chat bubble colors for sent vs received messages.",
+  "frontend/src/hooks/useActor.ts": "Custom hook managing backend actor initialization with isInitializing flag (true only when actor is null and loading), error state, and retry function to distinguish connecting from background refetching.",
+  "frontend/src/features/lobby/EditNicknameInline.tsx": "Inline nickname editor component with Save/Cancel/Clear actions, validation for empty nicknames, and keyboard shortcuts (Enter to save, Escape to cancel)."
+}

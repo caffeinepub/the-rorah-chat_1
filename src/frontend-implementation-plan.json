@@ -1,0 +1,34 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Clean rebuild/redeploy with zero functional changes (frontend stabilization)",
+  "requirements": [
+    {
+      "id": "REQ-35",
+      "summary": "Ensure the existing React/TypeScript frontend compiles cleanly and runs without runtime errors, preserving current Lobby/Room behavior.",
+      "acceptanceCriteria": [
+        "A clean build completes for both the Motoko backend canister and the React/TypeScript frontend without compilation errors.",
+        "The deployed app loads successfully in a browser and displays the Lobby screen when no nickname is set.",
+        "After setting a nickname, the Lobby Create Room and Join Room tabs render and are interactive (no disabled state due to build/runtime errors).",
+        "No uncaught exceptions appear in the browser console during initial load and basic navigation between Lobby and Room views."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/features/chat/RoomPage.tsx",
+          "operation": "modify",
+          "description": "Remove/adjust unused destructured values from hooks (e.g., unused error objects) to satisfy TypeScript noUnusedLocals/noUnusedParameters build settings while keeping identical runtime behavior for room validation, message loading, and navigation."
+        },
+        {
+          "path": "frontend/src/features/chat/components/MessageComposer.tsx",
+          "operation": "modify",
+          "description": "Eliminate unused imports and avoid creating unused locals from props destructuring (e.g., keep `nickname` in props type but do not destructure it) so the file compiles without changing send/attach/reply behavior."
+        },
+        {
+          "path": "frontend/src/features/chat/components/MessageItem.tsx",
+          "operation": "modify",
+          "description": "Remove unused type imports/locals (e.g., unused MessageId import) to prevent TypeScript compilation failures while keeping message rendering/edit/delete/reply/download logic unchanged."
+        }
+      ]
+    }
+  ]
+}
