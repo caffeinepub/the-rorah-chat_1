@@ -5,13 +5,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Send, Paperclip, X, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import type { Message, RoomId, UserId } from '../../../backend';
+import type { PublicMessage, RoomId, UserId } from '../../../backend';
+import { getDisplayName } from '../utils/displayName';
 
 interface MessageComposerProps {
   roomId: RoomId;
   userId: UserId;
   nickname: string;
-  replyToMessage?: Message;
+  replyToMessage?: PublicMessage;
   onCancelReply: () => void;
 }
 
@@ -93,12 +94,16 @@ export function MessageComposer(props: MessageComposerProps) {
         setUploadProgress(50);
       }
 
+      // Generate a unique client ID for optimistic updates
+      const clientId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
       await postMessageMutation.mutateAsync({
         userId,
         roomId,
         content: content.trim(),
         media: mediaBytes,
         replyTo: replyToMessage ? replyToMessage.messageId : null,
+        clientId,
       });
 
       setUploadProgress(100);
@@ -111,8 +116,9 @@ export function MessageComposer(props: MessageComposerProps) {
         fileInputRef.current.value = '';
       }
     } catch (error) {
-      toast.error('Failed to send message');
-      console.error(error);
+      // Error is handled by the mutation's onError
+      // No need for generic toast here - per-message error will show
+      console.error('Send error:', error);
       setUploadProgress(0);
     }
   };
@@ -135,7 +141,7 @@ export function MessageComposer(props: MessageComposerProps) {
         <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3">
           <div className="flex-1">
             <p className="text-xs font-medium text-muted-foreground">
-              Replying to {replyToMessage.userId}
+              Replying to {getDisplayName(replyToMessage)}
             </p>
             <p className="text-sm">{replyToMessage.content.substring(0, 50)}...</p>
           </div>
@@ -177,43 +183,34 @@ export function MessageComposer(props: MessageComposerProps) {
         </div>
       )}
 
-      {isUploading && (
+      {isUploading && uploadProgress > 0 && uploadProgress < 100 && (
         <div className="space-y-1">
           <Progress value={uploadProgress} className="h-1" />
-          <p className="text-xs text-muted-foreground">Uploading... {uploadProgress}%</p>
+          <p className="text-xs text-muted-foreground text-center">Uploading... {uploadProgress}%</p>
         </div>
       )}
 
       <div className="flex gap-2">
         <Textarea
-          placeholder="Type a message or paste a file..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onPaste={handlePaste}
+          placeholder="Type a message..."
+          className="min-h-[60px] resize-none"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handleSend(e);
             }
           }}
-          className="min-h-[60px] resize-none"
-          disabled={postMessageMutation.isPending}
         />
         <div className="flex flex-col gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="*/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
           <Button
             type="button"
             variant="outline"
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={postMessageMutation.isPending}
-            title="Attach file"
           >
             <Paperclip className="h-4 w-4" />
           </Button>
@@ -230,6 +227,14 @@ export function MessageComposer(props: MessageComposerProps) {
           </Button>
         </div>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileSelect}
+        accept="image/*,video/*,audio/*,.pdf"
+      />
     </form>
   );
 }

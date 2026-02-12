@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useRoomMessages, useValidateRoom } from '../../hooks/useQueries';
 import { useActor } from '../../hooks/useActor';
 import { useLocalProfile } from '../../hooks/useLocalProfile';
@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import type { MessageId } from '../../backend';
+import type { MessageId, PublicMessage } from '../../backend';
+import type { ChatMessage } from './types/chatMessage';
 
 interface RoomPageProps {
   roomId: string;
@@ -19,7 +20,13 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   const { userId, nickname } = useLocalProfile();
   const { actor } = useActor();
   const { data: roomExists, isLoading: isValidatingRoom, isError: isValidationError, refetch: refetchValidation } = useValidateRoom(roomId);
-  const { data: messages, isLoading: isLoadingMessages, isError, refetch } = useRoomMessages(
+  const { 
+    data: messages, 
+    isLoading: isLoadingMessages, 
+    isError, 
+    refetch,
+    isFetching,
+  } = useRoomMessages(
     roomId,
     roomExists === true
   );
@@ -32,6 +39,24 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages?.length]);
+
+  // Build a memoized lookup map for reply context resolution
+  const messageMap = useMemo(() => {
+    if (!messages) return new Map<MessageId, PublicMessage>();
+    const map = new Map<MessageId, PublicMessage>();
+    messages.forEach((msg) => {
+      map.set(msg.messageId, msg);
+    });
+    return map;
+  }, [messages]);
+
+  // Memoized callback to get reply message
+  const getReplyMessage = useCallback(
+    (messageId: MessageId) => {
+      return messageMap.get(messageId);
+    },
+    [messageMap]
+  );
 
   // Show connecting state only while actor is null
   if (!actor) {
@@ -107,7 +132,7 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
     );
   }
 
-  // Show loading while messages are being fetched
+  // Show loading while messages are being fetched initially
   if (isLoadingMessages) {
     return (
       <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
@@ -119,9 +144,7 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
     );
   }
 
-  const replyToMessageData = replyToMessage
-    ? messages?.find((m) => m.messageId === replyToMessage)
-    : undefined;
+  const replyToMessageData = replyToMessage ? messageMap.get(replyToMessage) : undefined;
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
@@ -134,31 +157,66 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
           <div className="flex-1">
             <h2 className="text-lg font-semibold">{roomId}</h2>
           </div>
+          {isFetching && !isLoadingMessages && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Syncing...</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Messages */}
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="container max-w-4xl px-4 py-4">
-          {isError ? (
+          {/* Non-blocking error banner for refetch failures */}
+          {isError && messages && messages.length > 0 && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Connection Issue</AlertTitle>
+              <AlertDescription className="flex items-center justify-between gap-4">
+                <span>Unable to fetch new messages. Showing cached messages.</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => refetch()}
+                  className="shrink-0"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Full error state when no cached messages */}
+          {isError && (!messages || messages.length === 0) ? (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error loading messages</AlertTitle>
-              <AlertDescription>
-                Failed to load messages. Please check your connection and try again.
+              <AlertDescription className="space-y-2">
+                <p>Failed to load messages. Please check your connection and try again.</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => refetch()}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Retry
+                </Button>
               </AlertDescription>
             </Alert>
           ) : messages && messages.length > 0 ? (
             <div className="space-y-4">
-              {messages.map((message) => (
+              {messages.map((message: ChatMessage) => (
                 <MessageItem
-                  key={message.messageId.toString()}
+                  key={message.clientId || message.messageId.toString()}
                   message={message}
                   isOwn={message.userId === userId}
                   currentUserId={userId}
                   roomId={roomId}
                   onReply={() => setReplyToMessage(message.messageId)}
-                  messages={messages}
+                  getReplyMessage={getReplyMessage}
                 />
               ))}
               <div ref={messagesEndRef} />

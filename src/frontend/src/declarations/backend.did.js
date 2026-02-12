@@ -23,11 +23,13 @@ export const RoomId = IDL.Text;
 export const UserId = IDL.Text;
 export const MessageId = IDL.Nat;
 export const Media = IDL.Vec(IDL.Nat8);
+export const Nickname = IDL.Text;
 export const Time = IDL.Int;
 export const Reaction = IDL.Record({ 'userId' : UserId, 'emoji' : IDL.Text });
-export const Message = IDL.Record({
+export const PublicMessage = IDL.Record({
   'media' : IDL.Opt(Media),
   'content' : IDL.Text,
+  'nickname' : Nickname,
   'messageId' : MessageId,
   'userId' : UserId,
   'timestamp' : Time,
@@ -68,25 +70,26 @@ export const idlService = IDL.Service({
   'deleteMessage' : IDL.Func([UserId, RoomId, MessageId], [], []),
   'editMessage' : IDL.Func(
       [UserId, RoomId, MessageId, IDL.Text],
-      [Message],
+      [PublicMessage],
       [],
     ),
   'getMessages' : IDL.Func(
       [RoomId, IDL.Nat, IDL.Nat],
-      [IDL.Vec(Message)],
+      [IDL.Vec(PublicMessage)],
       ['query'],
     ),
   'listRooms' : IDL.Func([], [IDL.Vec(Room)], ['query']),
   'postMessage' : IDL.Func(
       [UserId, RoomId, IDL.Text, IDL.Opt(Media), IDL.Opt(MessageId)],
-      [Message],
+      [PublicMessage],
       [],
     ),
   'reactToMessage' : IDL.Func(
       [UserId, RoomId, MessageId, IDL.Text],
-      [Message],
+      [PublicMessage],
       [],
     ),
+  'setNickname' : IDL.Func([UserId, IDL.Text], [], []),
   'validateRoom' : IDL.Func([RoomId], [IDL.Bool], ['query']),
 });
 
@@ -108,11 +111,13 @@ export const idlFactory = ({ IDL }) => {
   const UserId = IDL.Text;
   const MessageId = IDL.Nat;
   const Media = IDL.Vec(IDL.Nat8);
+  const Nickname = IDL.Text;
   const Time = IDL.Int;
   const Reaction = IDL.Record({ 'userId' : UserId, 'emoji' : IDL.Text });
-  const Message = IDL.Record({
+  const PublicMessage = IDL.Record({
     'media' : IDL.Opt(Media),
     'content' : IDL.Text,
+    'nickname' : Nickname,
     'messageId' : MessageId,
     'userId' : UserId,
     'timestamp' : Time,
@@ -153,25 +158,26 @@ export const idlFactory = ({ IDL }) => {
     'deleteMessage' : IDL.Func([UserId, RoomId, MessageId], [], []),
     'editMessage' : IDL.Func(
         [UserId, RoomId, MessageId, IDL.Text],
-        [Message],
+        [PublicMessage],
         [],
       ),
     'getMessages' : IDL.Func(
         [RoomId, IDL.Nat, IDL.Nat],
-        [IDL.Vec(Message)],
+        [IDL.Vec(PublicMessage)],
         ['query'],
       ),
     'listRooms' : IDL.Func([], [IDL.Vec(Room)], ['query']),
     'postMessage' : IDL.Func(
         [UserId, RoomId, IDL.Text, IDL.Opt(Media), IDL.Opt(MessageId)],
-        [Message],
+        [PublicMessage],
         [],
       ),
     'reactToMessage' : IDL.Func(
         [UserId, RoomId, MessageId, IDL.Text],
-        [Message],
+        [PublicMessage],
         [],
       ),
+    'setNickname' : IDL.Func([UserId, IDL.Text], [], []),
     'validateRoom' : IDL.Func([RoomId], [IDL.Bool], ['query']),
   });
 };

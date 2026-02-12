@@ -1,49 +1,95 @@
 {
   "kind": "build_request",
-  "title": "Rebuild and redeploy the current app without feature changes",
+  "title": "Improve messaging quality (reliability, consistency, and user feedback)",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-35",
-      "text": "Rebuild and redeploy the existing application as-is (no functional changes), ensuring the frontend and backend compile successfully and the deployed app loads without runtime errors.",
-      "target": "both",
+      "id": "REQ-41",
+      "text": "Add a higher-quality send experience in the chat composer by implementing optimistic message sending with clear pending/failed UI states and a one-click retry action when sending fails.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-1"
+          "msg-4"
         ],
         "quotes": [
-          "rebuild the app"
+          "optimize the quality of messaging"
         ]
       },
       "acceptanceCriteria": [
-        "A clean build completes for both the Motoko backend canister and the React/TypeScript frontend without compilation errors.",
-        "The deployed app loads successfully in a browser and displays the Lobby screen when no nickname is set.",
-        "After setting a nickname, the Lobby Create Room and Join Room tabs render and are interactive (no disabled state due to build/runtime errors).",
-        "No uncaught exceptions appear in the browser console during initial load and basic navigation between Lobby and Room views."
+        "When a user sends a message, it appears in the timeline immediately in a distinct \"Sending…\" state without waiting for the next polling refresh.",
+        "If the send request fails, the message switches to a \"Failed to send\" state with a visible Retry action that resubmits the same content/attachment/reply target.",
+        "On successful send, the optimistic message is reconciled into the normal message list (no duplicate visible entry).",
+        "User-facing error text is in English and is more specific than a generic \"Failed to send message\" when a backend error message is available."
+      ]
+    },
+    {
+      "id": "REQ-42",
+      "text": "Improve message timeline consistency by stabilizing message ordering and reducing visible flicker during periodic refreshes.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "optimize the quality of messaging"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Messages render in a consistent chronological order across refreshes (no reordering/jumping when the 3-second refetch occurs).",
+        "While refetching, the UI does not clear the existing message list; it continues to display the last known messages until new data arrives.",
+        "If a refetch fails, the UI keeps the current messages visible and shows a non-blocking English error state with an obvious Retry action."
+      ]
+    },
+    {
+      "id": "REQ-43",
+      "text": "Fix the backend message retrieval API to respect pagination parameters and return messages in a predictable order to improve perceived message consistency and reduce unnecessary data transfer.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "optimize the quality of messaging"
+        ]
+      },
+      "acceptanceCriteria": [
+        "backend/main.mo getMessages(roomId, start, count) uses the provided start/count arguments rather than always returning the full room history.",
+        "getMessages returns messages in a stable, predictable order (documented in code comments, e.g., oldest-to-newest or newest-to-oldest) and the frontend renders accordingly.",
+        "Fetching messages for a room with more than count messages returns only count messages for that request.",
+        "No new backend canisters/services are introduced; all logic remains in backend/main.mo (single-actor architecture)."
+      ]
+    },
+    {
+      "id": "REQ-44",
+      "text": "Improve send/refresh efficiency in the React Query data flow to support higher messaging quality under intermittent connectivity (fewer redundant full reloads, faster convergence after send).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "optimize the quality of messaging"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After a successful send, the message list updates without relying solely on invalidate+polling (e.g., by directly updating the React Query cache with the returned message).",
+        "Polling behavior remains reliable, but the app avoids unnecessary message list churn (e.g., does not repeatedly replace the entire list if data is unchanged).",
+        "All user-facing text added/changed is in English."
       ]
     }
   ],
   "constraints": [
-    "Use English for any user-facing text.",
-    "Do not edit files under frontend/immutablePaths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
-    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo changes if a state upgrade is required."
+    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo if an upgrade requires state migration.",
+    "Do not edit frontend immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui (compose instead).",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Do not add new features or change existing user flows beyond what is required to complete a successful rebuild/redeploy.",
-    "Do not redesign UI theme or modify branding/wording unless required to resolve build/runtime failures."
+    "Adding real-time messaging via WebSockets or any push-based transport.",
+    "Introducing external databases or third-party backend services.",
+    "Changing authentication beyond the existing approach (anonymous/local profile + optional Internet Identity infrastructure already present)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

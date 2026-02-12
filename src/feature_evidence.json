@@ -2,12 +2,14 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-rebuild-and-redeploy-the-existing-application-as-is-no-functional-changes-ensuring-the-frontend-and-backend-compile-successfully-and-the-deployed-app-loads-without-runtime-errors",
-      "featureTitle": "Rebuild and redeploy the existing application as-is (no functional changes), ensuring the frontend and backend compile successfully and the deployed app loads without runtime errors.",
+      "featureId": "feature-add-a-higher-quality-send-experience-in-the-chat-composer-by-implementing-optimistic-message-sending-with-clear-pending-failed-ui-states-and-a-one-click-retry-action-when-sending-fails",
+      "featureTitle": "Add a higher-quality send experience in the chat composer by implementing optimistic message sending with clear pending/failed UI states and a one-click retry action when sending fails.",
       "files": [
-        "frontend/src/features/chat/RoomPage.tsx",
         "frontend/src/features/chat/components/MessageComposer.tsx",
-        "frontend/src/features/chat/components/MessageItem.tsx"
+        "frontend/src/features/chat/components/MessageItem.tsx",
+        "frontend/src/features/chat/types/chatMessage.ts",
+        "frontend/src/features/chat/utils/messageErrors.ts",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -18,7 +20,48 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-35"
+        "REQ-41"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-improve-message-timeline-consistency-by-stabilizing-message-ordering-and-reducing-visible-flicker-during-periodic-refreshes",
+      "featureTitle": "Improve message timeline consistency by stabilizing message ordering and reducing visible flicker during periodic refreshes.",
+      "files": [
+        "frontend/src/features/chat/RoomPage.tsx",
+        "frontend/src/features/chat/utils/messageOrdering.ts",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-42"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-improve-send-refresh-efficiency-in-the-react-query-data-flow-to-support-higher-messaging-quality-under-intermittent-connectivity-fewer-redundant-full-reloads-faster-convergence-after-send",
+      "featureTitle": "Improve send/refresh efficiency in the React Query data flow to support higher messaging quality under intermittent connectivity (fewer redundant full reloads, faster convergence after send).",
+      "files": [
+        "frontend/src/features/chat/RoomPage.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-44"
       ],
       "confidence": "high"
     }

@@ -1,11 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Rebuild and redeploy the existing application with no functional changes, ensuring it compiles and runs without runtime errors.
+**Goal:** Improve chat messaging reliability and perceived quality with optimistic sending, clearer user feedback, stable timeline behavior, and more efficient send/refresh flows.
 
 **Planned changes:**
-- Fix any build/compile issues in the Motoko backend canister and the React/TypeScript frontend (without changing features).
-- Resolve any runtime errors that prevent the app from loading or basic navigation between Lobby and Room views.
-- Verify the deployed app loads to the Lobby screen, and that Create Room / Join Room tabs work after setting a nickname.
+- Add optimistic message sending so newly sent messages appear immediately with a distinct “Sending…” state.
+- Add failed-send handling with an English “Failed to send” state and a one-click Retry action that resends the same content/attachment/reply target.
+- Reconcile optimistic messages with server-confirmed messages to avoid duplicate entries after successful send.
+- Stabilize timeline ordering across periodic refreshes and reduce visible flicker by keeping the last-known message list rendered while refetching.
+- On refetch failure, keep current messages visible and show a non-blocking English error state with a clear Retry action.
+- Fix backend `getMessages(roomId, start, count)` to honor pagination parameters and return messages in a documented, predictable order.
+- Improve React Query flow to update the message list immediately after a successful send (cache update) and reduce unnecessary list churn when polled data is unchanged.
 
-**User-visible outcome:** The redeployed app loads successfully in the browser, shows the Lobby when no nickname is set, and after setting a nickname the Create Room and Join Room tabs render and are interactive without console errors.
+**User-visible outcome:** Messages appear instantly when sent with clear sending/failed states and a retry button; the timeline stays consistently ordered with less flicker during refreshes; and message loading/sending feels more reliable, especially under intermittent connectivity.

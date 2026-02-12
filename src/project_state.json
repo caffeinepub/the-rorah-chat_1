@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 23,
+  "projectStateVersion": 31,
   "summary": "Anonymous chatting web app (\"The Rorah Chat\") where users join/create rooms using only a nickname (no login), with dark mode, media upload/download, cross-device/network usability, persistent type bar, message reply/quote/react, edit/delete own messages, and distinct sent vs received chat bubble styling.",
   "architectural_notes": [
     "Room create/join flows are currently blocked because the backend actor initialization may never complete; frontend should not permanently disable room actions while actor is spinning up and must handle safe validation during initialization."
@@ -10,7 +10,8 @@
     "Create Room screen: user cannot type a room name (room name input missing/disabled).",
     "Home screen/lobby: user cannot enter/join their chat room (blocked from navigating into room).",
     "Room validation is failing when attempting to enter/join a room (room code fails validation).",
-    "Creating or joining rooms now fails due to backend actor connection/initialization not completing (room actions disabled or validation fails immediately)."
+    "Creating or joining rooms now fails due to backend actor connection/initialization not completing (room actions disabled or validation fails immediately).",
+    "Chat UI shows sender userId above messages; should display sender nickname instead."
   ],
   "isFixRequest": false,
   "existing_features": [
@@ -245,6 +246,62 @@
         "REQ-35"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-show-the-sender-s-nickname-not-the-sender-s-userid-to-message-recipients-throughout-the-chat-ui-including-the-message-header-and-reply-quote-context-blocks",
+      "title": "Show the sender's nickname (not the sender's userId) to message recipients throughout the chat UI, including the message header and reply/quote context blocks.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-explicit-download-options-for-all-media-attachments-images-videos-and-other-file-types-directly-from-the-message-timeline-ui",
+      "title": "Add explicit download options for all media attachments (images, videos, and other file types) directly from the message timeline UI.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-optimize-chat-speed-and-performance-by-reducing-unnecessary-data-transfer-and-rendering-work-during-message-refreshes-while-keeping-message-fetching-reliable-without-real-time-sockets",
+      "title": "Optimize chat speed and performance by reducing unnecessary data transfer and rendering work during message refreshes, while keeping message fetching reliable without real-time sockets.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-chat-ui-never-displays-a-sender-s-internal-userid-to-other-users-the-sender-label-shown-above-each-message-and-in-reply-quote-context-must-display-only-the-sender-s-nickname-and-if-no-nickname-is-available-it-must-display-a-generic-placeholder-e-g-anonymous-rather-than-the-userid",
+      "title": "Ensure the chat UI never displays a sender's internal userId to other users; the sender label shown above each message (and in reply/quote context) must display only the sender's nickname, and if no nickname is available it must display a generic placeholder (e.g., \"Anonymous\") rather than the userId.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-higher-quality-send-experience-in-the-chat-composer-by-implementing-optimistic-message-sending-with-clear-pending-failed-ui-states-and-a-one-click-retry-action-when-sending-fails",
+      "title": "Add a higher-quality send experience in the chat composer by implementing optimistic message sending with clear pending/failed UI states and a one-click retry action when sending fails.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-message-timeline-consistency-by-stabilizing-message-ordering-and-reducing-visible-flicker-during-periodic-refreshes",
+      "title": "Improve message timeline consistency by stabilizing message ordering and reducing visible flicker during periodic refreshes.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-send-refresh-efficiency-in-the-react-query-data-flow-to-support-higher-messaging-quality-under-intermittent-connectivity-fewer-redundant-full-reloads-faster-convergence-after-send",
+      "title": "Improve send/refresh efficiency in the React Query data flow to support higher messaging quality under intermittent connectivity (fewer redundant full reloads, faster convergence after send).",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -371,6 +428,54 @@
       "summary": "Extend the media/attachment model so chat messages can carry any file type (not only image/video) by storing and returning media metadata (at minimum: MIME type and original filename) along with the media bytes.",
       "reqIds": [
         "REQ-33"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Rebuild and redeploy the existing application as-is (no functional changes) to ensure frontend/backend compile and the deployed app loads without runtime errors",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Show sender nickname (not user ID) to message recipients in the chat UI",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Add explicit UI controls to download received/sent media attachments from chat messages",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Optimize chat speed and overall performance (message loading/sending/rendering and backend interactions)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Update the backend public message formatting so the nickname returned for a message is never the sender's userId; if no nickname has been set for that userId, return a generic placeholder nickname (e.g., \"Anonymous\") instead of returning the userId as a fallback.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Optimize overall messaging quality (reliability, consistency, and user-perceived message delivery/refresh experience)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Fix the backend message retrieval API to respect pagination parameters and return messages in a predictable order to improve perceived message consistency and reduce unnecessary data transfer.",
+      "reqIds": [
+        "REQ-43"
       ],
       "status": "pending"
     }

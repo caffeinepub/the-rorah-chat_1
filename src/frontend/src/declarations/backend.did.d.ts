@@ -11,9 +11,12 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export type Media = Uint8Array;
-export interface Message {
+export type MessageId = bigint;
+export type Nickname = string;
+export interface PublicMessage {
   'media' : [] | [Media],
   'content' : string,
+  'nickname' : Nickname,
   'messageId' : MessageId,
   'userId' : UserId,
   'timestamp' : Time,
@@ -21,7 +24,6 @@ export interface Message {
   'roomId' : RoomId,
   'reactions' : Array<Reaction>,
 }
-export type MessageId = bigint;
 export interface Reaction { 'userId' : UserId, 'emoji' : string }
 export interface Room { 'name' : string, 'roomId' : RoomId }
 export type RoomId = string;
@@ -56,14 +58,21 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   'createRoom' : ActorMethod<[RoomId, string], undefined>,
   'deleteMessage' : ActorMethod<[UserId, RoomId, MessageId], undefined>,
-  'editMessage' : ActorMethod<[UserId, RoomId, MessageId, string], Message>,
-  'getMessages' : ActorMethod<[RoomId, bigint, bigint], Array<Message>>,
+  'editMessage' : ActorMethod<
+    [UserId, RoomId, MessageId, string],
+    PublicMessage
+  >,
+  'getMessages' : ActorMethod<[RoomId, bigint, bigint], Array<PublicMessage>>,
   'listRooms' : ActorMethod<[], Array<Room>>,
   'postMessage' : ActorMethod<
     [UserId, RoomId, string, [] | [Media], [] | [MessageId]],
-    Message
+    PublicMessage
   >,
-  'reactToMessage' : ActorMethod<[UserId, RoomId, MessageId, string], Message>,
+  'reactToMessage' : ActorMethod<
+    [UserId, RoomId, MessageId, string],
+    PublicMessage
+  >,
+  'setNickname' : ActorMethod<[UserId, string], undefined>,
   'validateRoom' : ActorMethod<[RoomId], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;

@@ -1,71 +1,47 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T12:30:25.351Z",
-  "summary": "REQ-35 asks for a rebuild/redeploy with no functional changes. The diff shows substantial backend and frontend behavior changes (new/expanded message fields, media handling, clipboard paste attachment, upload progress, room validation UX states), which goes beyond an as-is rebuild. The diff alone cannot demonstrate successful compilation/deployment or absence of runtime errors.",
+  "generatedAt": "2026-02-12T13:27:48.988Z",
+  "summary": "Most BuildRequest items appear implemented: frontend optimistic send with pending/failed + retry, stable ordering and reduced flicker during polling, cache/structural-sharing optimizations, and backend pagination now slices by start/count. One notable gap is that backend message order is not explicitly documented in code comments as requested. The diff also introduces a migration module + upgrade wiring and some extra composer UX that were not requested.",
   "missing_requirements": [
     {
-      "id": "REQ-35",
-      "requirement": "Rebuild and redeploy the existing application as-is (no functional changes), ensuring the frontend and backend compile successfully and the deployed app loads without runtime errors.",
-      "reason": "The changes shown introduce/alter functional behavior rather than being a no-op rebuild/redeploy. Also, compilation/deploy success and runtime-error-free behavior cannot be confirmed from code changes alone in this diff summary.",
-      "evidence": [
-        "backend/main.mo",
-        "frontend/src/features/chat/components/MessageComposer.tsx",
-        "frontend/src/features/chat/components/MessageItem.tsx",
-        "frontend/src/features/chat/RoomPage.tsx"
-      ]
-    }
-  ],
-  "hallucinated_features": [
-    {
-      "description": "Clipboard paste-to-attach file support in the message composer (including toasts and limiting to a single file).",
-      "reason": "Not requested; BuildRequest explicitly says rebuild/redeploy without feature changes.",
-      "evidence": [
-        "frontend/src/features/chat/components/MessageComposer.tsx"
-      ]
-    },
-    {
-      "description": "File upload progress tracking/UI state for message sending (uploadProgress, isUploading, progress updates).",
-      "reason": "Not requested; constitutes new/changed behavior beyond rebuild-only scope.",
-      "evidence": [
-        "frontend/src/features/chat/components/MessageComposer.tsx"
-      ]
-    },
-    {
-      "description": "Client-side media MIME-type detection via magic-number heuristics and creation of blob URLs for inline display.",
-      "reason": "Not requested; adds/changes media rendering behavior.",
-      "evidence": [
-        "frontend/src/features/chat/components/MessageItem.tsx"
-      ]
-    },
-    {
-      "description": "Media download handling via dynamically created anchor element (download action).",
-      "reason": "Not requested; adds/changes user-facing functionality.",
-      "evidence": [
-        "frontend/src/features/chat/components/MessageItem.tsx"
-      ]
-    },
-    {
-      "description": "New/expanded room validation UX states in RoomPage (connecting state, validating room loading state, validation error with retry, room-not-found view).",
-      "reason": "Not requested; changes user flow/UX beyond rebuild-only scope.",
-      "evidence": [
-        "frontend/src/features/chat/RoomPage.tsx"
-      ]
-    },
-    {
-      "description": "Backend data model and API expansion/changes: Message includes media, reactions, replyTo; new/changed methods for posting/editing/deleting messages; inclusion of blob-storage mixin.",
-      "reason": "Not requested; indicates functional changes rather than a rebuild-only adjustment.",
+      "id": "REQ-43",
+      "requirement": "Document the stable, predictable ordering used by getMessages (e.g., oldest-to-newest or newest-to-oldest) in code comments so frontend can render accordingly.",
+      "reason": "backend/main.mo changes show getMessages reversing and slicing the list, but the diff snippet does not include any comment documenting the chosen order.",
       "evidence": [
         "backend/main.mo"
       ]
     }
   ],
-  "confidence": 0.72,
+  "hallucinated_features": [
+    {
+      "description": "Added backend state migration module and wired actor upgrade migration despite no shown need for state migration changes.",
+      "reason": "BuildRequest constraint allows adding backend/migration.mo only if an upgrade requires state migration. The added migration.run returns the old state unchanged, and main.mo is modified to include migration wiring, which appears unnecessary for the requested pagination/ordering fix alone.",
+      "evidence": [
+        "backend/migration.mo",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Clipboard paste file-attachment UX (including toasts like \"File attached from clipboard\" and limiting to one file).",
+      "reason": "Not requested by any REQ (REQ-41..44 focus on optimistic send states, timeline consistency, pagination, and React Query efficiency).",
+      "evidence": [
+        "frontend/src/features/chat/components/MessageComposer.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.66,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
     "frontend/src/features/chat/RoomPage.tsx",
     "frontend/src/features/chat/components/MessageComposer.tsx",
     "frontend/src/features/chat/components/MessageItem.tsx",
+    "frontend/src/features/chat/types/chatMessage.ts",
+    "frontend/src/features/chat/utils/messageErrors.ts",
+    "frontend/src/features/chat/utils/messageOrdering.ts",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

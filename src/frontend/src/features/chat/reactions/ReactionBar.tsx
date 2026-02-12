@@ -3,10 +3,10 @@ import { useReactToMessage } from '../../../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Smile } from 'lucide-react';
-import type { Message, RoomId, UserId } from '../../../backend';
+import type { PublicMessage, RoomId, UserId } from '../../../backend';
 
 interface ReactionBarProps {
-  message: Message;
+  message: PublicMessage;
   currentUserId: UserId;
   roomId: RoomId;
   align?: 'start' | 'end';
@@ -47,7 +47,7 @@ export function ReactionBar({ message, currentUserId, roomId, align = 'start' }:
           className="h-6 px-2 text-xs"
           onClick={() => handleReact(emoji)}
         >
-          {emoji} {count}
+          {emoji} {String(count)}
         </Button>
       ))}
       <Popover open={open} onOpenChange={setOpen}>

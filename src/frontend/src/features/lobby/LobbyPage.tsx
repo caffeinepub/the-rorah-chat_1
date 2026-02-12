@@ -244,10 +244,10 @@ export function LobbyPage({ onJoinRoom }: LobbyPageProps) {
             <CardContent>
               <form onSubmit={handleCreateRoom} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="createRoomCode">Room code</Label>
+                  <Label htmlFor="room-code">Room Code (optional)</Label>
                   <Input
-                    id="createRoomCode"
-                    placeholder="Leave blank to generate a code"
+                    id="room-code"
+                    placeholder="Leave empty for auto-generated code"
                     value={createRoomCode}
                     onChange={(e) => {
                       setCreateRoomCode(e.target.value);
@@ -255,18 +255,23 @@ export function LobbyPage({ onJoinRoom }: LobbyPageProps) {
                     }}
                     disabled={isCreating}
                   />
-                  <p className="text-sm text-muted-foreground">
-                    Leave blank to generate a code automatically, or enter your own custom room code.
+                  <p className="text-xs text-muted-foreground">
+                    Enter a custom code or leave empty to generate one automatically
                   </p>
-                  {createRoomError && (
-                    <p className="text-sm text-destructive">{createRoomError}</p>
-                  )}
                 </div>
+
+                {createRoomError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{createRoomError}</AlertDescription>
+                  </Alert>
+                )}
+
                 <Button type="submit" className="w-full" disabled={isCreating}>
                   {isCreating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {validateRoomMutation.isPending ? 'Validating...' : 'Creating...'}
+                      Creating...
                     </>
                   ) : (
                     <>
@@ -283,16 +288,16 @@ export function LobbyPage({ onJoinRoom }: LobbyPageProps) {
         <TabsContent value="join" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Join a Room</CardTitle>
-              <CardDescription>Enter a room code to join an existing chat</CardDescription>
+              <CardTitle>Join an Existing Room</CardTitle>
+              <CardDescription>Enter the room code to join a chat</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleJoinRoom} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="roomId">Room Code</Label>
+                  <Label htmlFor="join-room-code">Room Code</Label>
                   <Input
-                    id="roomId"
-                    placeholder="e.g., room_1234567890_abc"
+                    id="join-room-code"
+                    placeholder="Enter room code"
                     value={joinRoomId}
                     onChange={(e) => {
                       setJoinRoomId(e.target.value);
@@ -301,38 +306,41 @@ export function LobbyPage({ onJoinRoom }: LobbyPageProps) {
                     disabled={isJoining}
                   />
                 </div>
+
                 {joinRoomError && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Validation Error</AlertTitle>
-                    <AlertDescription>{joinRoomError}</AlertDescription>
+                    <AlertDescription className="mt-2">
+                      {joinRoomError}
+                    </AlertDescription>
+                    <div className="mt-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRetryJoin}
+                        disabled={isJoining}
+                      >
+                        Retry
+                      </Button>
+                    </div>
                   </Alert>
                 )}
-                <div className="flex gap-2">
-                  <Button type="submit" className="flex-1" disabled={isJoining}>
-                    {isJoining ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Validating...
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="mr-2 h-4 w-4" />
-                        Join Room
-                      </>
-                    )}
-                  </Button>
-                  {joinRoomError && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleRetryJoin}
-                      disabled={isJoining}
-                    >
-                      Retry
-                    </Button>
+
+                <Button type="submit" className="w-full" disabled={isJoining}>
+                  {isJoining ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Joining...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Join Room
+                    </>
                   )}
-                </div>
+                </Button>
               </form>
             </CardContent>
           </Card>

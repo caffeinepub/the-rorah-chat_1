@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { Room, Message, MessageId, RoomId, UserId, Media } from '../backend';
+import type { Room, PublicMessage, MessageId, RoomId, UserId, Media } from '../backend';
+import type { ChatMessage, MessageSendPayload } from '../features/chat/types/chatMessage';
+import { sortMessages } from '../features/chat/utils/messageOrdering';
+import { extractErrorMessage } from '../features/chat/utils/messageErrors';
 
 export function useListRooms() {
   const { actor } = useActor();
@@ -61,40 +64,154 @@ export function useCreateRoom() {
 export function useRoomMessages(roomId: RoomId, enabled: boolean = true) {
   const { actor } = useActor();
 
-  return useQuery<Message[]>({
+  return useQuery<ChatMessage[]>({
     queryKey: ['messages', roomId],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getMessages(roomId, BigInt(0), BigInt(1000));
+      // Fetch only recent messages (last 100) to reduce payload
+      const messages = await actor.getMessages(roomId, BigInt(0), BigInt(100));
+      return messages as ChatMessage[];
     },
     enabled: !!actor && !!roomId && enabled,
     refetchInterval: 3000,
+    staleTime: 1000,
+    // Keep previous data while refetching to avoid flicker
+    placeholderData: (previousData) => previousData,
+    // Apply stable sorting and structural sharing
+    select: (data) => {
+      const sorted = sortMessages(data);
+      return sorted;
+    },
+    // Structural sharing to prevent unnecessary re-renders
+    structuralSharing: (oldData, newData) => {
+      if (!oldData || !newData) return newData;
+      if (!Array.isArray(oldData) || !Array.isArray(newData)) return newData;
+      
+      // If arrays are the same length and all messages match, return old reference
+      if (oldData.length === newData.length) {
+        const allMatch = oldData.every((oldMsg, idx) => {
+          const newMsg = newData[idx];
+          return (
+            oldMsg.messageId === newMsg.messageId &&
+            oldMsg.content === newMsg.content &&
+            oldMsg.reactions.length === newMsg.reactions.length
+          );
+        });
+        
+        if (allMatch) return oldData;
+      }
+      
+      return newData;
+    },
   });
+}
+
+interface PostMessageContext {
+  previousMessages?: ChatMessage[];
 }
 
 export function usePostMessage() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({
-      userId,
-      roomId,
-      content,
-      media,
-      replyTo,
-    }: {
-      userId: UserId;
-      roomId: RoomId;
-      content: string;
-      media: Media | null;
-      replyTo: MessageId | null;
-    }) => {
+  return useMutation<PublicMessage, Error, MessageSendPayload & { clientId?: string }, PostMessageContext>({
+    mutationFn: async ({ userId, roomId, content, media, replyTo }) => {
       if (!actor) throw new Error('Actor not initialized');
       return actor.postMessage(userId, roomId, content, media, replyTo);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['messages', variables.roomId] });
+    
+    // Optimistic update: add message immediately
+    onMutate: async (variables) => {
+      const { roomId, clientId } = variables;
+      
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['messages', roomId] });
+      
+      // Snapshot previous value
+      const previousMessages = queryClient.getQueryData<ChatMessage[]>(['messages', roomId]);
+      
+      // Optimistically update cache
+      if (clientId) {
+        const optimisticMessage: ChatMessage = {
+          messageId: BigInt(0), // Temporary ID
+          userId: variables.userId,
+          roomId: variables.roomId,
+          content: variables.content,
+          timestamp: BigInt(Date.now() * 1000000), // Current time in nanoseconds
+          media: variables.media || undefined,
+          reactions: [],
+          replyTo: variables.replyTo || undefined,
+          nickname: '', // Will be filled by backend
+          clientId,
+          clientStatus: 'sending',
+          clientSendPayload: {
+            userId: variables.userId,
+            roomId: variables.roomId,
+            content: variables.content,
+            media: variables.media,
+            replyTo: variables.replyTo,
+          },
+        };
+        
+        queryClient.setQueryData<ChatMessage[]>(
+          ['messages', roomId],
+          (old) => {
+            const messages = old || [];
+            return sortMessages([...messages, optimisticMessage]);
+          }
+        );
+      }
+      
+      return { previousMessages };
+    },
+    
+    // On error, mark the optimistic message as failed
+    onError: (error, variables, context) => {
+      const { roomId, clientId } = variables;
+      
+      if (clientId) {
+        queryClient.setQueryData<ChatMessage[]>(
+          ['messages', roomId],
+          (old) => {
+            if (!old) return old;
+            return old.map((msg) =>
+              msg.clientId === clientId
+                ? {
+                    ...msg,
+                    clientStatus: 'failed' as const,
+                    clientErrorText: extractErrorMessage(error),
+                  }
+                : msg
+            );
+          }
+        );
+      } else if (context?.previousMessages) {
+        // Rollback if no clientId
+        queryClient.setQueryData(['messages', roomId], context.previousMessages);
+      }
+    },
+    
+    // On success, replace optimistic message with real one
+    onSuccess: (data, variables) => {
+      const { roomId, clientId } = variables;
+      
+      queryClient.setQueryData<ChatMessage[]>(
+        ['messages', roomId],
+        (old) => {
+          if (!old) return [data as ChatMessage];
+          
+          // Remove optimistic message and add real one
+          const withoutOptimistic = old.filter((msg) => msg.clientId !== clientId);
+          
+          // Check if message already exists (avoid duplicates)
+          const exists = withoutOptimistic.some((msg) => msg.messageId === data.messageId);
+          if (exists) {
+            return withoutOptimistic;
+          }
+          
+          return sortMessages([...withoutOptimistic, data as ChatMessage]);
+        }
+      );
     },
   });
 }
@@ -118,8 +235,17 @@ export function useEditMessage() {
       if (!actor) throw new Error('Actor not initialized');
       return actor.editMessage(userId, roomId, messageId, newContent);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['messages', variables.roomId] });
+    onSuccess: (data, variables) => {
+      // Directly update the message in cache
+      queryClient.setQueryData<ChatMessage[]>(
+        ['messages', variables.roomId],
+        (old) => {
+          if (!old) return old;
+          return old.map((msg) =>
+            msg.messageId === variables.messageId ? (data as ChatMessage) : msg
+          );
+        }
+      );
     },
   });
 }
@@ -142,7 +268,14 @@ export function useDeleteMessage() {
       await actor.deleteMessage(userId, roomId, messageId);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['messages', variables.roomId] });
+      // Directly remove the message from cache
+      queryClient.setQueryData<ChatMessage[]>(
+        ['messages', variables.roomId],
+        (old) => {
+          if (!old) return old;
+          return old.filter((msg) => msg.messageId !== variables.messageId);
+        }
+      );
     },
   });
 }
@@ -166,8 +299,28 @@ export function useReactToMessage() {
       if (!actor) throw new Error('Actor not initialized');
       return actor.reactToMessage(userId, roomId, messageId, emoji);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['messages', variables.roomId] });
+    onSuccess: (data, variables) => {
+      // Directly update the message in cache
+      queryClient.setQueryData<ChatMessage[]>(
+        ['messages', variables.roomId],
+        (old) => {
+          if (!old) return old;
+          return old.map((msg) =>
+            msg.messageId === variables.messageId ? (data as ChatMessage) : msg
+          );
+        }
+      );
+    },
+  });
+}
+
+export function useSetNickname() {
+  const { actor } = useActor();
+
+  return useMutation({
+    mutationFn: async ({ userId, nickname }: { userId: UserId; nickname: string }) => {
+      if (!actor) throw new Error('Actor not initialized');
+      await actor.setNickname(userId, nickname);
     },
   });
 }
