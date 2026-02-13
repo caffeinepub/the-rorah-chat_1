@@ -61,7 +61,7 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   // Show connecting state only while actor is null
   if (!actor) {
     return (
-      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+      <div className="flex h-[100dvh] items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">Connecting to backend...</p>
@@ -73,7 +73,7 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   // Show validation error state with retry button
   if (isValidationError) {
     return (
-      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+      <div className="flex h-[100dvh] items-center justify-center">
         <div className="container max-w-md px-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -100,7 +100,7 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   // Show loading while validating
   if (isValidatingRoom) {
     return (
-      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+      <div className="flex h-[100dvh] items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">Validating room...</p>
@@ -112,7 +112,7 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   // Only show "Room Not Found" when validation has definitively returned false
   if (roomExists === false) {
     return (
-      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+      <div className="flex h-[100dvh] items-center justify-center">
         <div className="container max-w-md px-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -135,7 +135,7 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   // Show loading while messages are being fetched initially
   if (isLoadingMessages) {
     return (
-      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+      <div className="flex h-[100dvh] items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">Loading messages...</p>
@@ -147,9 +147,9 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   const replyToMessageData = replyToMessage ? messageMap.get(replyToMessage) : undefined;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col">
+    <div className="fixed inset-0 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center gap-4 px-4">
           <Button variant="ghost" size="icon" onClick={onLeaveRoom}>
             <ArrowLeft className="h-5 w-5" />
@@ -166,74 +166,76 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
         </div>
       </div>
 
-      {/* Messages */}
-      <ScrollArea className="flex-1" ref={scrollAreaRef}>
-        <div className="container max-w-4xl px-4 py-4">
-          {/* Non-blocking error banner for refetch failures */}
-          {isError && messages && messages.length > 0 && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Connection Issue</AlertTitle>
-              <AlertDescription className="flex items-center justify-between gap-4">
-                <span>Unable to fetch new messages. Showing cached messages.</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => refetch()}
-                  className="shrink-0"
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Retry
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
+      {/* Messages - scrollable area */}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <ScrollArea className="h-full" ref={scrollAreaRef}>
+          <div className="container max-w-4xl px-4 py-4 pb-6">
+            {/* Non-blocking error banner for refetch failures */}
+            {isError && messages && messages.length > 0 && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Connection Issue</AlertTitle>
+                <AlertDescription className="flex items-center justify-between gap-4">
+                  <span>Unable to fetch new messages. Showing cached messages.</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => refetch()}
+                    className="shrink-0"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
 
-          {/* Full error state when no cached messages */}
-          {isError && (!messages || messages.length === 0) ? (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error loading messages</AlertTitle>
-              <AlertDescription className="space-y-2">
-                <p>Failed to load messages. Please check your connection and try again.</p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => refetch()}
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Retry
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ) : messages && messages.length > 0 ? (
-            <div className="space-y-4">
-              {messages.map((message: ChatMessage) => (
-                <MessageItem
-                  key={message.clientId || message.messageId.toString()}
-                  message={message}
-                  isOwn={message.userId === userId}
-                  currentUserId={userId}
-                  roomId={roomId}
-                  onReply={() => setReplyToMessage(message.messageId)}
-                  getReplyMessage={getReplyMessage}
-                />
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          ) : (
-            <div className="flex h-full items-center justify-center text-center text-muted-foreground">
-              <div>
-                <p className="text-lg font-medium">No messages yet</p>
-                <p className="text-sm">Be the first to send a message!</p>
+            {/* Full error state when no cached messages */}
+            {isError && (!messages || messages.length === 0) ? (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error loading messages</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>Failed to load messages. Please check your connection and try again.</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => refetch()}
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : messages && messages.length > 0 ? (
+              <div className="space-y-4">
+                {messages.map((message: ChatMessage) => (
+                  <MessageItem
+                    key={message.clientId || message.messageId.toString()}
+                    message={message}
+                    isOwn={message.userId === userId}
+                    currentUserId={userId}
+                    roomId={roomId}
+                    onReply={() => setReplyToMessage(message.messageId)}
+                    getReplyMessage={getReplyMessage}
+                  />
+                ))}
+                <div ref={messagesEndRef} />
               </div>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+            ) : (
+              <div className="flex h-full items-center justify-center text-center text-muted-foreground">
+                <div>
+                  <p className="text-lg font-medium">No messages yet</p>
+                  <p className="text-sm">Be the first to send a message!</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
 
-      {/* Message Composer */}
-      <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* Message Composer - fixed at bottom */}
+      <div className="shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container max-w-4xl px-4 py-4">
           <MessageComposer
             roomId={roomId}

@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Allow users to reply to their own sent messages in the chat UI.
+**Goal:** Keep the chat message composer/type bar visually fixed at the bottom of the viewport while the message timeline scrolls independently.
 
 **Planned changes:**
-- Update the message action UI to show the Reply action for messages authored by the current user as well as other users.
-- Keep the Reply action hidden/disabled for optimistic messages in sending/failed states.
-- Ensure clicking Reply on an own message sets the reply context and composer reply-to preview the same way as replying to others.
+- Update the chat room page/layout so only the message list is scrollable and the composer remains fixed and always clickable at the bottom of the screen.
+- Add sufficient bottom spacing/padding in the scrollable message list so the last message is fully visible above the fixed composer (not hidden behind it).
+- Ensure the fixed-composer behavior remains usable on small/mobile viewports during typical interactions (scrolling, focusing the input, sending a message).
 
-**User-visible outcome:** In a chat room, you can reply to your own messages (with the normal quoted/reply-to context), while Reply remains unavailable for messages that are still sending or have failed.
+**User-visible outcome:** Users can scroll through chat messages while the composer stays fixed at the bottom, remains accessible at all times, and the newest/last messages are not obscured by the composer.

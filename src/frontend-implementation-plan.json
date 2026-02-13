@@ -1,22 +1,26 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Allow replying to your own messages",
+  "title": "Fix chat composer to bottom while only message list scrolls",
   "requirements": [
     {
-      "id": "REQ-45",
-      "summary": "Show the Reply action for the current user's own (non-optimistic) messages and ensure it sets the same reply-to context used for replying to other users.",
+      "id": "REQ-46",
+      "summary": "Adjust chat room layout so the message list scrolls independently while the composer stays fixed at the bottom of the viewport across desktop and mobile.",
       "acceptanceCriteria": [
-        "In a room, a message sent by the current user shows a visible Reply action in the same area where reactions/reply are displayed for other users' messages.",
-        "Clicking Reply on the current user's own message sets the reply context and the composer shows the correct quoted/reply-to context for that message (same behavior as replying to someone else).",
-        "The Reply action remains hidden/disabled for messages in 'sending' or 'failed' optimistic states (no regression to existing pending/failed UX).",
-        "No backend changes are required for this feature; replying to own messages works using the existing replyTo mechanism already used for other messages."
+        "When scrolling up and down through the message list in a room, the composer/type bar stays in a fixed position at the bottom of the screen and does not move with the message content.",
+        "The message list remains scrollable independently of the composer, and messages are not hidden behind the composer (i.e., there is sufficient bottom spacing/padding so the last message can be fully viewed above the composer).",
+        "On small/mobile viewports, the composer remains usable and does not jump around during typical interactions (scrolling the timeline, focusing the input, sending a message)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/features/chat/components/MessageItem.tsx",
+          "path": "frontend/src/features/chat/RoomPage.tsx",
           "operation": "modify",
-          "description": "Remove the UI-only restriction that hides the Reply button on isOwn messages, while keeping the existing guard that hides actions for optimistic 'sending'/'failed' messages. Ensure the Reply button remains in the same actions row (next to ReactionBar) and continues to call the existing onReply handler to set reply context."
+          "description": "Restructure the RoomPage layout to prevent the document/body from scrolling and to ensure only the messages region scrolls: use a viewport-height container (prefer dynamic viewport units for mobile), apply overflow-hidden on the page wrapper, ensure flex children use min-h-0, and keep the composer section as a non-scrolling bottom bar (e.g., sticky/bottom-aligned with appropriate z-index). Add explicit bottom spacing to the message list content so the final message is never obscured by the composer."
+        },
+        {
+          "path": "frontend/src/features/chat/components/MessageComposer.tsx",
+          "operation": "modify",
+          "description": "Harden the composer for mobile usability when fixed to the bottom (ensure it remains fully clickable and stable when the textarea is focused and when sending). Keep changes limited to layout/styling props/classes (no new chat features), and avoid modifications to any shadcn UI components."
         }
       ]
     }

@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T10:39:29.220Z",
+  "generatedAt": "2026-02-13T10:45:32.258Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,14 +11,15 @@
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-45",
-        "summary": "Update the chat message UI so the Reply action is available for messages sent by the current user as well as messages sent by other users (i.e., remove the UI restriction that hides Reply on own messages), while keeping the existing behavior that hides Reply on pending/failed optimistic messages.",
+        "id": "REQ-46",
+        "summary": "Update the chat room layout so the message composer/type bar stays visually fixed at the bottom of the viewport and does not shift or move while the user scrolls through the message timeline. Ensure only the message list scrolls, and the composer remains accessible and clickable at all times (including on small/mobile screens).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/features/chat/components/MessageItem.tsx"
+          "frontend/src/features/chat/RoomPage.tsx",
+          "frontend/src/features/chat/components/MessageComposer.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/features/chat/components/MessageItem.tsx"
+          "frontend/src/features/chat/RoomPage.tsx"
         ]
       }
     ]
@@ -28,7 +29,7 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/features/chat/components/MessageItem.tsx",
+    "frontend/src/features/chat/RoomPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

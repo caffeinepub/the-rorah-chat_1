@@ -1,55 +1,14 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T10:39:29.217Z",
-  "summary": "REQ-45 appears partially implemented: the diff summary claims Reply is now visible for all messages (including the user’s own) in MessageItem. However, the provided truncated code does not show the actual conditional rendering/handler logic for the Reply action, so it cannot be confirmed from evidence that Reply remains hidden for optimistic 'sending'/'failed' messages or that clicking Reply correctly sets reply context. Additionally, several unrelated enhancements (media MIME detection, download utilities, broader UX changes described in summaries) were introduced without being requested.",
-  "missing_requirements": [
-    {
-      "id": "REQ-45",
-      "requirement": "Keep the existing behavior that hides/disables Reply on pending ('sending') or failed optimistic messages while making Reply available for the current user's own messages.",
-      "reason": "Although MessageItem computes isPending/isFailed, the truncated diff does not show the Reply button/menu item rendering logic that uses these flags to hide/disable Reply for optimistic states. Therefore this acceptance criterion cannot be verified from the provided diff evidence.",
-      "evidence": [
-        "frontend/src/features/chat/components/MessageItem.tsx (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-45",
-      "requirement": "Clicking Reply on the current user's own message sets reply context and composer shows correct reply-to/quote context (same as replying to others).",
-      "reason": "MessageItemProps includes onReply, but the truncated diff does not show the Reply action wiring (e.g., onClick calling onReply with the correct message) nor any composer-side behavior changes. This cannot be verified from the provided diff evidence.",
-      "evidence": [
-        "frontend/src/features/chat/components/MessageItem.tsx (truncated)"
-      ]
-    }
-  ],
-  "hallucinated_features": [
-    {
-      "description": "Added/changed media MIME-type detection from raw bytes and blob URL creation/cleanup logic inside MessageItem.",
-      "reason": "Not requested by REQ-45 (which is limited to enabling Reply on own messages while keeping pending/failed behavior).",
-      "evidence": [
-        "frontend/src/features/chat/components/MessageItem.tsx (truncated)"
-      ]
-    },
-    {
-      "description": "Added/changed download-related utilities and/or behavior (downloadFromUrl, getExtensionFromMimeType) used by the message UI.",
-      "reason": "Not requested by REQ-45.",
-      "evidence": [
-        "frontend/src/features/chat/components/MessageItem.tsx (truncated)",
-        "frontend-file-summaries.txt (truncated)"
-      ]
-    },
-    {
-      "description": "Broader chat UX changes described in summaries (e.g., retry button for failed messages, non-blocking error banner, syncing indicator, optimistic update behavior changes).",
-      "reason": "Not requested by REQ-45; requirement is narrowly scoped to Reply visibility on own messages.",
-      "evidence": [
-        "frontend-file-summaries.txt (truncated)",
-        "project_state.json (truncated)"
-      ]
-    }
-  ],
-  "confidence": 0.56,
+  "generatedAt": "2026-02-13T10:45:32.255Z",
+  "summary": "REQ-46 appears to be implemented by updating the chat room page layout so only the message list scrolls while the header/composer remain fixed. However, the RoomPage.tsx diff is truncated before the relevant layout JSX/CSS, so verification relies on the provided file summary text rather than direct code evidence.",
+  "missing_requirements": [],
+  "hallucinated_features": [],
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/features/chat/components/MessageItem.tsx",
+    "frontend/src/features/chat/RoomPage.tsx",
     "project_state.json"
   ]
 }

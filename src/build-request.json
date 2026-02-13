@@ -1,50 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Allow replying to your own messages",
+  "title": "Keep chat message composer fixed while scrolling message list",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-45",
-      "text": "Update the chat message UI so the Reply action is available for messages sent by the current user as well as messages sent by other users (i.e., remove the UI restriction that hides Reply on own messages), while keeping the existing behavior that hides Reply on pending/failed optimistic messages.",
+      "id": "REQ-46",
+      "text": "Update the chat room layout so the message composer/type bar stays visually fixed at the bottom of the viewport and does not shift or move while the user scrolls through the message timeline. Ensure only the message list scrolls, and the composer remains accessible and clickable at all times (including on small/mobile screens).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-7",
-          "msg-9"
+          "msg-3"
         ],
         "quotes": [
-          "i should be able to reply to be my own messages as well",
-          "yes"
+          "try to make sure the type bar never moves despite scrolling through the messages"
         ]
       },
       "acceptanceCriteria": [
-        "In a room, a message sent by the current user shows a visible Reply action in the same area where reactions/reply are displayed for other users' messages.",
-        "Clicking Reply on the current user's own message sets the reply context and the composer shows the correct quoted/reply-to context for that message (same behavior as replying to someone else).",
-        "The Reply action remains hidden/disabled for messages in 'sending' or 'failed' optimistic states (no regression to existing pending/failed UX).",
-        "No backend changes are required for this feature; replying to own messages works using the existing replyTo mechanism already used for other messages."
+        "When scrolling up and down through the message list in a room, the composer/type bar stays in a fixed position at the bottom of the screen and does not move with the message content.",
+        "The message list remains scrollable independently of the composer, and messages are not hidden behind the composer (i.e., there is sufficient bottom spacing/padding so the last message can be fully viewed above the composer).",
+        "On small/mobile viewports, the composer remains usable and does not jump around during typical interactions (scrolling the timeline, focusing the input, sending a message)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (compose existing shadcn components instead).",
-    "Do not edit any frontend immutablePaths listed in SYSTEM_CONTEXT."
+    "Do not edit files under frontend/src/components/ui (shadcn UI components are immutable); compose them from feature/page components instead.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Changing reply/quote backend data models or APIs.",
-    "Adding new reaction types or changing reaction behavior."
+    "Adding new chat features (e.g., real-time sockets, new message types).",
+    "Backend/Motoko changes."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

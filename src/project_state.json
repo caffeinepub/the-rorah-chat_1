@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 33,
+  "projectStateVersion": 35,
   "summary": "Anonymous chatting web app (\"The Rorah Chat\") where users join/create rooms using only a nickname (no login), with dark mode, media upload/download, cross-device/network usability, persistent type bar, message reply/quote/react, edit/delete own messages, and distinct sent vs received chat bubble styling.",
   "architectural_notes": [
     "Room create/join flows are currently blocked because the backend actor initialization may never complete; frontend should not permanently disable room actions while actor is spinning up and must handle safe validation during initialization."
@@ -12,7 +12,8 @@
     "Room validation is failing when attempting to enter/join a room (room code fails validation).",
     "Creating or joining rooms now fails due to backend actor connection/initialization not completing (room actions disabled or validation fails immediately).",
     "Chat UI shows sender userId above messages; should display sender nickname instead.",
-    "Cannot reply to your own messages (reply action missing/disabled on messages sent by the current user)."
+    "Cannot reply to your own messages (reply action missing/disabled on messages sent by the current user).",
+    "Type bar/message composer moves while scrolling through messages; it should stay fixed/sticky and never shift during scroll."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -309,6 +310,14 @@
       "title": "Update the chat message UI so the Reply action is available for messages sent by the current user as well as messages sent by other users (i.e., remove the UI restriction that hides Reply on own messages), while keeping the existing behavior that hides Reply on pending/failed optimistic messages.",
       "reqIds": [
         "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-chat-room-layout-so-the-message-composer-type-bar-stays-visually-fixed-at-the-bottom-of-the-viewport-and-does-not-shift-or-move-while-the-user-scrolls-through-the-message-timeline-ensure-only-the-message-list-scrolls-and-the-composer-remains-accessible-and-clickable-at-all-times-including-on-small-mobile-screens",
+      "title": "Update the chat room layout so the message composer/type bar stays visually fixed at the bottom of the viewport and does not shift or move while the user scrolls through the message timeline. Ensure only the message list scrolls, and the composer remains accessible and clickable at all times (including on small/mobile screens).",
+      "reqIds": [
+        "REQ-46"
       ],
       "version": 1
     }
