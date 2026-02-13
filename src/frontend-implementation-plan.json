@@ -1,89 +1,22 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Improve messaging quality (reliability, consistency, and user feedback)",
+  "title": "Allow replying to your own messages",
   "requirements": [
     {
-      "id": "REQ-41",
-      "summary": "Implement optimistic message sending with pending/failed UI, and a one-click retry that resubmits the original message payload.",
+      "id": "REQ-45",
+      "summary": "Show the Reply action for the current user's own (non-optimistic) messages and ensure it sets the same reply-to context used for replying to other users.",
       "acceptanceCriteria": [
-        "When a user sends a message, it appears in the timeline immediately in a distinct \"Sending…\" state without waiting for the next polling refresh.",
-        "If the send request fails, the message switches to a \"Failed to send\" state with a visible Retry action that resubmits the same content/attachment/reply target.",
-        "On successful send, the optimistic message is reconciled into the normal message list (no duplicate visible entry).",
-        "User-facing error text is in English and is more specific than a generic \"Failed to send message\" when a backend error message is available."
+        "In a room, a message sent by the current user shows a visible Reply action in the same area where reactions/reply are displayed for other users' messages.",
+        "Clicking Reply on the current user's own message sets the reply context and the composer shows the correct quoted/reply-to context for that message (same behavior as replying to someone else).",
+        "The Reply action remains hidden/disabled for messages in 'sending' or 'failed' optimistic states (no regression to existing pending/failed UX).",
+        "No backend changes are required for this feature; replying to own messages works using the existing replyTo mechanism already used for other messages."
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/features/chat/types/chatMessage.ts",
-          "operation": "create",
-          "description": "Add a frontend-only ChatMessage type that extends backend PublicMessage with optional optimistic fields (e.g., clientId, clientStatus: 'sending' | 'failed', clientErrorText, and the original send payload needed for one-click retry)."
-        },
-        {
-          "path": "frontend/src/features/chat/utils/messageErrors.ts",
-          "operation": "create",
-          "description": "Add a small helper to extract a specific, English error message from thrown backend/network errors for display in failed message UI (falling back to a clear English default when needed)."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Enhance usePostMessage to support optimistic sending via React Query (onMutate adds/updates an optimistic ChatMessage in the ['messages', roomId] cache; onError marks that cached message as failed with extracted error text; onSuccess reconciles by replacing the optimistic entry with the returned backend message, ensuring no duplicate is visible; expose a retry-friendly mutate signature that can target an existing clientId)."
-        },
-        {
-          "path": "frontend/src/features/chat/components/MessageComposer.tsx",
-          "operation": "modify",
-          "description": "Switch the send flow to create an optimistic message (including attachment bytes and reply target) before awaiting the backend, relying on the updated usePostMessage behavior; ensure the composer no longer blocks user feedback on failures (remove generic-only toast in favor of per-message failed state while keeping English guidance). Uses shadcn-ui Button/Textarea/Progress for consistent UX. Verify the component's usage instructions before implementing."
-        },
         {
           "path": "frontend/src/features/chat/components/MessageItem.tsx",
           "operation": "modify",
-          "description": "Update MessageItem to accept/render ChatMessage optimistic state: show a distinct inline 'Sending…' indicator for pending messages and a 'Failed to send' indicator with a clearly visible one-click Retry action that reuses the stored payload; show the more specific English error text when available. Use shadcn-ui Button for the Retry action and align with existing message bubble styling. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-42",
-      "summary": "Stabilize message ordering and reduce flicker by keeping the last known list during refetches, sorting predictably, and providing non-blocking retry on refresh failures.",
-      "acceptanceCriteria": [
-        "Messages render in a consistent chronological order across refreshes (no reordering/jumping when the 3-second refetch occurs).",
-        "While refetching, the UI does not clear the existing message list; it continues to display the last known messages until new data arrives.",
-        "If a refetch fails, the UI keeps the current messages visible and shows a non-blocking English error state with an obvious Retry action."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/features/chat/utils/messageOrdering.ts",
-          "operation": "create",
-          "description": "Add a shared ordering utility to sort messages in a stable, predictable order (e.g., timestamp ascending, then messageId/clientId tie-breakers) and to help keep optimistic messages positioned consistently during refreshes."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Update useRoomMessages to reduce flicker and ordering jitter: keep previously fetched messages visible during periodic refetch (use placeholder/previous data behavior), apply stable sorting via a select step, and add structural-sharing logic so unchanged refresh results do not churn/replace the entire list in the UI."
-        },
-        {
-          "path": "frontend/src/features/chat/RoomPage.tsx",
-          "operation": "modify",
-          "description": "Adjust timeline rendering to avoid clearing messages on refresh errors: if refetch fails and cached/previous messages exist, keep rendering them and show a non-blocking English error banner with an obvious Retry action (use shadcn-ui Alert + Button) while continuing polling behavior. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-44",
-      "summary": "Improve React Query send/refresh efficiency by updating the cache directly after sends and minimizing redundant list replacements during polling.",
-      "acceptanceCriteria": [
-        "After a successful send, the message list updates without relying solely on invalidate+polling (e.g., by directly updating the React Query cache with the returned message).",
-        "Polling behavior remains reliable, but the app avoids unnecessary message list churn (e.g., does not repeatedly replace the entire list if data is unchanged).",
-        "All user-facing text added/changed is in English."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Refine React Query behavior for message sends and polling: on successful postMessage, directly merge the returned message into the ['messages', roomId] cache (dedupe by messageId and replace any optimistic placeholder); keep polling but avoid unnecessary invalidate-only flows; implement/strengthen structural-sharing equality checks so identical refresh results reuse the previous array reference and minimize UI churn."
-        },
-        {
-          "path": "frontend/src/features/chat/RoomPage.tsx",
-          "operation": "modify",
-          "description": "Wire any new query flags (e.g., isFetching/isRefetching) into the UI to provide subtle, non-blocking refresh feedback without list resets, ensuring all new user-facing strings remain English. Uses shadcn-ui primitives already present on the page. Verify the component's usage instructions before implementing."
+          "description": "Remove the UI-only restriction that hides the Reply button on isOwn messages, while keeping the existing guard that hides actions for optimistic 'sending'/'failed' messages. Ensure the Reply button remains in the same actions row (next to ReactionBar) and continues to call the existing onReply handler to set reply context."
         }
       ]
     }

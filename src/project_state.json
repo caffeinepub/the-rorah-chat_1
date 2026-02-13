@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 31,
+  "projectStateVersion": 33,
   "summary": "Anonymous chatting web app (\"The Rorah Chat\") where users join/create rooms using only a nickname (no login), with dark mode, media upload/download, cross-device/network usability, persistent type bar, message reply/quote/react, edit/delete own messages, and distinct sent vs received chat bubble styling.",
   "architectural_notes": [
     "Room create/join flows are currently blocked because the backend actor initialization may never complete; frontend should not permanently disable room actions while actor is spinning up and must handle safe validation during initialization."
@@ -11,9 +11,10 @@
     "Home screen/lobby: user cannot enter/join their chat room (blocked from navigating into room).",
     "Room validation is failing when attempting to enter/join a room (room code fails validation).",
     "Creating or joining rooms now fails due to backend actor connection/initialization not completing (room actions disabled or validation fails immediately).",
-    "Chat UI shows sender userId above messages; should display sender nickname instead."
+    "Chat UI shows sender userId above messages; should display sender nickname instead.",
+    "Cannot reply to your own messages (reply action missing/disabled on messages sent by the current user)."
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-create-the-core-anonymous-room-based-chat-flow-for-the-rorah-chat-users-can-enter-a-nickname-no-login-credentials-create-a-room-or-join-an-existing-room-and-then-view-send-messages-within-that-room",
@@ -302,6 +303,14 @@
         "REQ-44"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-chat-message-ui-so-the-reply-action-is-available-for-messages-sent-by-the-current-user-as-well-as-messages-sent-by-other-users-i-e-remove-the-ui-restriction-that-hides-reply-on-own-messages-while-keeping-the-existing-behavior-that-hides-reply-on-pending-failed-optimistic-messages",
+      "title": "Update the chat message UI so the Reply action is available for messages sent by the current user as well as messages sent by other users (i.e., remove the UI restriction that hides Reply on own messages), while keeping the existing behavior that hides Reply on pending/failed optimistic messages.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -478,6 +487,12 @@
         "REQ-43"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Allow replying to your own messages (reply action should be available on messages sent by the current user)",
+      "reqIds": [],
+      "status": "in_progress"
     }
   ],
   "projectName": "The Rorah Chat",

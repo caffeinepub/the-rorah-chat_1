@@ -5,11 +5,11 @@ import List "mo:core/List";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Set "mo:core/Set";
-import Migration "migration";
+
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
-(with migration = Migration.run)
+
 actor {
   type UserId = Text;
   type RoomId = Text;

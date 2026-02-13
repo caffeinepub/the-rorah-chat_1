@@ -369,12 +369,10 @@ export const MessageItem = memo(function MessageItem({
               roomId={roomId}
               align={isOwn ? 'end' : 'start'}
             />
-            {!isOwn && (
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onReply}>
-                <Reply className="mr-1 h-3 w-3" />
-                Reply
-              </Button>
-            )}
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onReply}>
+              <Reply className="mr-1 h-3 w-3" />
+              Reply
+            </Button>
           </div>
         )}
       </div>

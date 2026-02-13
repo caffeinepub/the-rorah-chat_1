@@ -1,85 +1,34 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T13:27:48.991Z",
+  "generatedAt": "2026-02-13T10:39:29.220Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 3,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-41",
-        "summary": "Add a higher-quality send experience in the chat composer by implementing optimistic message sending with clear pending/failed UI states and a one-click retry action when sending fails.",
+        "id": "REQ-45",
+        "summary": "Update the chat message UI so the Reply action is available for messages sent by the current user as well as messages sent by other users (i.e., remove the UI restriction that hides Reply on own messages), while keeping the existing behavior that hides Reply on pending/failed optimistic messages.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/features/chat/types/chatMessage.ts",
-          "frontend/src/features/chat/utils/messageErrors.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/features/chat/components/MessageComposer.tsx",
           "frontend/src/features/chat/components/MessageItem.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/features/chat/types/chatMessage.ts",
-          "frontend/src/features/chat/utils/messageErrors.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/features/chat/components/MessageComposer.tsx",
           "frontend/src/features/chat/components/MessageItem.tsx"
-        ]
-      },
-      {
-        "id": "REQ-42",
-        "summary": "Improve message timeline consistency by stabilizing message ordering and reducing visible flicker during periodic refreshes.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/features/chat/utils/messageOrdering.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/features/chat/RoomPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/features/chat/utils/messageOrdering.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/features/chat/RoomPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-43",
-        "summary": "Fix the backend message retrieval API to respect pagination parameters and return messages in a predictable order to improve perceived message consistency and reduce unnecessary data transfer.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-44",
-        "summary": "Improve send/refresh efficiency in the React Query data flow to support higher messaging quality under intermittent connectivity (fewer redundant full reloads, faster convergence after send).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/features/chat/RoomPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/features/chat/RoomPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/features/chat/RoomPage.tsx",
-    "frontend/src/features/chat/components/MessageComposer.tsx",
     "frontend/src/features/chat/components/MessageItem.tsx",
-    "frontend/src/features/chat/types/chatMessage.ts",
-    "frontend/src/features/chat/utils/messageErrors.ts",
-    "frontend/src/features/chat/utils/messageOrdering.ts",
-    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

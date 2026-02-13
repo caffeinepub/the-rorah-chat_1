@@ -2,14 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-higher-quality-send-experience-in-the-chat-composer-by-implementing-optimistic-message-sending-with-clear-pending-failed-ui-states-and-a-one-click-retry-action-when-sending-fails",
-      "featureTitle": "Add a higher-quality send experience in the chat composer by implementing optimistic message sending with clear pending/failed UI states and a one-click retry action when sending fails.",
+      "featureId": "feature-update-the-chat-message-ui-so-the-reply-action-is-available-for-messages-sent-by-the-current-user-as-well-as-messages-sent-by-other-users-i-e-remove-the-ui-restriction-that-hides-reply-on-own-messages-while-keeping-the-existing-behavior-that-hides-reply-on-pending-failed-optimistic-messages",
+      "featureTitle": "Update the chat message UI so the Reply action is available for messages sent by the current user as well as messages sent by other users (i.e., remove the UI restriction that hides Reply on own messages), while keeping the existing behavior that hides Reply on pending/failed optimistic messages.",
       "files": [
-        "frontend/src/features/chat/components/MessageComposer.tsx",
-        "frontend/src/features/chat/components/MessageItem.tsx",
-        "frontend/src/features/chat/types/chatMessage.ts",
-        "frontend/src/features/chat/utils/messageErrors.ts",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/features/chat/components/MessageItem.tsx"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -20,48 +16,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-41"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-improve-message-timeline-consistency-by-stabilizing-message-ordering-and-reducing-visible-flicker-during-periodic-refreshes",
-      "featureTitle": "Improve message timeline consistency by stabilizing message ordering and reducing visible flicker during periodic refreshes.",
-      "files": [
-        "frontend/src/features/chat/RoomPage.tsx",
-        "frontend/src/features/chat/utils/messageOrdering.ts",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-42"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-improve-send-refresh-efficiency-in-the-react-query-data-flow-to-support-higher-messaging-quality-under-intermittent-connectivity-fewer-redundant-full-reloads-faster-convergence-after-send",
-      "featureTitle": "Improve send/refresh efficiency in the React Query data flow to support higher messaging quality under intermittent connectivity (fewer redundant full reloads, faster convergence after send).",
-      "files": [
-        "frontend/src/features/chat/RoomPage.tsx",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-44"
+        "REQ-45"
       ],
       "confidence": "high"
     }
