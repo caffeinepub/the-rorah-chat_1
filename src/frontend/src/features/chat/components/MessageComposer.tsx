@@ -3,7 +3,7 @@ import { usePostMessage } from '../../../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Send, Paperclip, X, Loader2 } from 'lucide-react';
+import { Send, Paperclip, X, Loader2, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import type { PublicMessage, RoomId, UserId } from '../../../backend';
 import { getDisplayName } from '../utils/displayName';
@@ -14,12 +14,15 @@ interface MessageComposerProps {
   nickname: string;
   replyToMessage?: PublicMessage;
   onCancelReply: () => void;
+  onActivity?: () => void;
+  onReload: () => void;
+  isReloading: boolean;
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export function MessageComposer(props: MessageComposerProps) {
-  const { roomId, userId, replyToMessage, onCancelReply } = props;
+  const { roomId, userId, replyToMessage, onCancelReply, onActivity, onReload, isReloading } = props;
   const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -36,6 +39,7 @@ export function MessageComposer(props: MessageComposerProps) {
     }
 
     setSelectedFile(file);
+    onActivity?.();
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -74,6 +78,7 @@ export function MessageComposer(props: MessageComposerProps) {
 
     setSelectedFile(file);
     toast.success(`File "${file.name}" attached from clipboard`);
+    onActivity?.();
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -111,6 +116,7 @@ export function MessageComposer(props: MessageComposerProps) {
       setSelectedFile(null);
       onCancelReply();
       setUploadProgress(0);
+      onActivity?.();
 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -121,6 +127,10 @@ export function MessageComposer(props: MessageComposerProps) {
       console.error('Send error:', error);
       setUploadProgress(0);
     }
+  };
+
+  const handleTyping = () => {
+    onActivity?.();
   };
 
   const isUploading = postMessageMutation.isPending && uploadProgress > 0;
@@ -193,10 +203,14 @@ export function MessageComposer(props: MessageComposerProps) {
       <div className="flex gap-2">
         <Textarea
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => {
+            setContent(e.target.value);
+            handleTyping();
+          }}
           onPaste={handlePaste}
+          onFocus={handleTyping}
           placeholder="Type a message..."
-          className="min-h-[60px] resize-none"
+          className="min-h-[80px] resize-none"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -205,6 +219,21 @@ export function MessageComposer(props: MessageComposerProps) {
           }}
         />
         <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={onReload}
+            disabled={isReloading}
+            title="Reload messages"
+            aria-label="Reload messages"
+          >
+            {isReloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+          </Button>
           <Button
             type="button"
             variant="outline"

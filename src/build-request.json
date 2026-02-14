@@ -1,34 +1,35 @@
 {
   "kind": "build_request",
-  "title": "Keep chat message composer fixed while scrolling message list",
+  "title": "Redeploy backend and frontend canisters (no functional changes)",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-46",
-      "text": "Update the chat room layout so the message composer/type bar stays visually fixed at the bottom of the viewport and does not shift or move while the user scrolls through the message timeline. Ensure only the message list scrolls, and the composer remains accessible and clickable at all times (including on small/mobile screens).",
-      "target": "frontend",
+      "id": "REQ-1",
+      "text": "Perform a redeploy by rebuilding and upgrading the backend canister, regenerating backend bindings, rebuilding the frontend, and deploying the frontend canister, following the existing redeploy runbook/scripts.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-10"
         ],
         "quotes": [
-          "try to make sure the type bar never moves despite scrolling through the messages"
+          "redeploy again"
         ]
       },
       "acceptanceCriteria": [
-        "When scrolling up and down through the message list in a room, the composer/type bar stays in a fixed position at the bottom of the screen and does not move with the message content.",
-        "The message list remains scrollable independently of the composer, and messages are not hidden behind the composer (i.e., there is sufficient bottom spacing/padding so the last message can be fully viewed above the composer).",
-        "On small/mobile viewports, the composer remains usable and does not jump around during typical interactions (scrolling the timeline, focusing the input, sending a message)."
+        "Running the redeploy process completes without errors (backend build, backend upgrade, binding generation, frontend build, frontend deploy).",
+        "Post-deployment verification checks pass: backend canister status is Running, frontend canister status is Running, and the backend query call `listRooms` succeeds.",
+        "No functional code changes are introduced as part of the redeploy."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/src/components/ui (shadcn UI components are immutable); compose them from feature/page components instead.",
-    "Use English for any user-facing text."
+    "Do not introduce functional code changes during the redeploy (deployment-only operation).",
+    "Keep all Motoko logic within the existing single-actor architecture (backend/main.mo).",
+    "Do not modify files under frontend immutable paths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui)."
   ],
   "nonGoals": [
-    "Adding new chat features (e.g., real-time sockets, new message types).",
-    "Backend/Motoko changes."
+    "Adding or changing application features (e.g., chat behavior, message visibility rules).",
+    "Schema/state migrations unless required by an intentional functional change."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,14 +1,41 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T10:45:32.255Z",
-  "summary": "REQ-46 appears to be implemented by updating the chat room page layout so only the message list scrolls while the header/composer remain fixed. However, the RoomPage.tsx diff is truncated before the relevant layout JSX/CSS, so verification relies on the provided file summary text rather than direct code evidence.",
-  "missing_requirements": [],
-  "hallucinated_features": [],
-  "confidence": 0.62,
+  "generatedAt": "2026-02-14T10:35:54.317Z",
+  "summary": "REQ-1 asks for a deployment-only redeploy (rebuild/upgrade backend, regenerate bindings, rebuild/deploy frontend) with no functional code changes. The diff adds redeploy scripts/runbook that match the redeploy steps, but it also includes substantial functional changes in backend/main.mo and appears to introduce/describe multiple new frontend behaviors, which conflicts with the “no functional changes” constraint/AC.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "No functional code changes are introduced as part of the redeploy.",
+      "reason": "The diff shows substantive Motoko code changes in the backend (new types, storage mixin include, room/message logic changes), indicating functional modifications rather than a deployment-only change.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Backend functional changes to chat domain logic (rooms/messages/reactions/media types and operations) and inclusion of blob-storage mixin.",
+      "reason": "BuildRequest explicitly states redeploy only with no functional code changes; these code changes go beyond redeploy scripting/runbook updates.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "Frontend feature/behavior changes described across many files (e.g., disabled automatic polling, manual reload, 1-hour message visibility filter, file upload/preview/download handling, reactions UI behavior, theme system changes).",
+      "reason": "BuildRequest non-goals prohibit adding/changing application features during redeploy; the diff summary indicates multiple product/UX behaviors beyond deployment-only work.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    }
+  ],
+  "confidence": 0.68,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/features/chat/RoomPage.tsx",
+    "frontend/REDEPLOY.md",
+    "frontend/scripts/redeploy-verify.sh",
+    "frontend/scripts/redeploy.sh",
     "project_state.json"
   ]
 }

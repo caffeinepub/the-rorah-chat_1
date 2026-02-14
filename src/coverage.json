@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T10:45:32.258Z",
+  "generatedAt": "2026-02-14T10:35:54.319Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,25 +11,31 @@
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-46",
-        "summary": "Update the chat room layout so the message composer/type bar stays visually fixed at the bottom of the viewport and does not shift or move while the user scrolls through the message timeline. Ensure only the message list scrolls, and the composer remains accessible and clickable at all times (including on small/mobile screens).",
+        "id": "REQ-1",
+        "summary": "Perform a redeploy by rebuilding and upgrading the backend canister, regenerating backend bindings, rebuilding the frontend, and deploying the frontend canister, following the existing redeploy runbook/scripts.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/features/chat/RoomPage.tsx",
-          "frontend/src/features/chat/components/MessageComposer.tsx"
+          "frontend/REDEPLOY.md",
+          "frontend/scripts/redeploy.sh",
+          "frontend/scripts/redeploy-verify.sh"
         ],
         "matchedFiles": [
-          "frontend/src/features/chat/RoomPage.tsx"
+          "frontend/REDEPLOY.md",
+          "frontend/scripts/redeploy.sh",
+          "frontend/scripts/redeploy-verify.sh"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/features/chat/RoomPage.tsx",
+    "frontend/REDEPLOY.md",
+    "frontend/scripts/redeploy-verify.sh",
+    "frontend/scripts/redeploy.sh",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

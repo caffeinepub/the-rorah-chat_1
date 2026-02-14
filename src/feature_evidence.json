@@ -2,10 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-chat-room-layout-so-the-message-composer-type-bar-stays-visually-fixed-at-the-bottom-of-the-viewport-and-does-not-shift-or-move-while-the-user-scrolls-through-the-message-timeline-ensure-only-the-message-list-scrolls-and-the-composer-remains-accessible-and-clickable-at-all-times-including-on-small-mobile-screens",
-      "featureTitle": "Update the chat room layout so the message composer/type bar stays visually fixed at the bottom of the viewport and does not shift or move while the user scrolls through the message timeline. Ensure only the message list scrolls, and the composer remains accessible and clickable at all times (including on small/mobile screens).",
+      "featureId": "feature-perform-a-redeploy-by-rebuilding-and-upgrading-the-backend-canister-regenerating-backend-bindings-rebuilding-the-frontend-and-deploying-the-frontend-canister-following-the-existing-redeploy-runbook-scripts",
+      "featureTitle": "Perform a redeploy by rebuilding and upgrading the backend canister, regenerating backend bindings, rebuilding the frontend, and deploying the frontend canister, following the existing redeploy runbook/scripts.",
       "files": [
-        "frontend/src/features/chat/RoomPage.tsx"
+        "frontend/REDEPLOY.md",
+        "frontend/scripts/redeploy-verify.sh",
+        "frontend/scripts/redeploy.sh"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -16,7 +18,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-46"
+        "REQ-1"
       ],
       "confidence": "high"
     }

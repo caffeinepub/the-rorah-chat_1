@@ -1,26 +1,31 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix chat composer to bottom while only message list scrolls",
+  "title": "Redeploy runbook/script hardening for repeatable backend+frontend redeploy (no functional app changes)",
   "requirements": [
     {
-      "id": "REQ-46",
-      "summary": "Adjust chat room layout so the message list scrolls independently while the composer stays fixed at the bottom of the viewport across desktop and mobile.",
+      "id": "REQ-1",
+      "summary": "Ensure the existing redeploy runbook/scripts reliably rebuild, upgrade, regenerate bindings, rebuild the frontend, deploy, and verify without introducing functional code changes.",
       "acceptanceCriteria": [
-        "When scrolling up and down through the message list in a room, the composer/type bar stays in a fixed position at the bottom of the screen and does not move with the message content.",
-        "The message list remains scrollable independently of the composer, and messages are not hidden behind the composer (i.e., there is sufficient bottom spacing/padding so the last message can be fully viewed above the composer).",
-        "On small/mobile viewports, the composer remains usable and does not jump around during typical interactions (scrolling the timeline, focusing the input, sending a message)."
+        "Running the redeploy process completes without errors (backend build, backend upgrade, binding generation, frontend build, frontend deploy).",
+        "Post-deployment verification checks pass: backend canister status is Running, frontend canister status is Running, and the backend query call `listRooms` succeeds.",
+        "No functional code changes are introduced as part of the redeploy."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/features/chat/RoomPage.tsx",
+          "path": "frontend/REDEPLOY.md",
           "operation": "modify",
-          "description": "Restructure the RoomPage layout to prevent the document/body from scrolling and to ensure only the messages region scrolls: use a viewport-height container (prefer dynamic viewport units for mobile), apply overflow-hidden on the page wrapper, ensure flex children use min-h-0, and keep the composer section as a non-scrolling bottom bar (e.g., sticky/bottom-aligned with appropriate z-index). Add explicit bottom spacing to the message list content so the final message is never obscured by the composer."
+          "description": "Complete and align the redeploy runbook so it explicitly references and matches the existing redeploy scripts (redeploy + verification), calls out prerequisites, and reiterates the constraint that this is a deployment-only operation with no functional changes."
         },
         {
-          "path": "frontend/src/features/chat/components/MessageComposer.tsx",
+          "path": "frontend/scripts/redeploy.sh",
           "operation": "modify",
-          "description": "Harden the composer for mobile usability when fixed to the bottom (ensure it remains fully clickable and stable when the textarea is focused and when sending). Keep changes limited to layout/styling props/classes (no new chat features), and avoid modifications to any shadcn UI components."
+          "description": "Harden the redeploy automation for repeatable runs (e.g., stricter bash flags, clearer logging, and consistent sequencing of build/upgrade/generate/build/deploy) while preserving the same redeploy intent and avoiding any application logic changes."
+        },
+        {
+          "path": "frontend/scripts/redeploy-verify.sh",
+          "operation": "modify",
+          "description": "Fix verification flow robustness so the backend `listRooms` check is correctly evaluated under strict error handling (avoid brittle `$?` checks after command substitution with `set -e`), and keep output focused on the required running-status checks and the `listRooms` call."
         }
       ]
     }

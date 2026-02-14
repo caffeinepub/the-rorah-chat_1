@@ -4,6 +4,7 @@ import type { Room, PublicMessage, MessageId, RoomId, UserId, Media } from '../b
 import type { ChatMessage, MessageSendPayload } from '../features/chat/types/chatMessage';
 import { sortMessages } from '../features/chat/utils/messageOrdering';
 import { extractErrorMessage } from '../features/chat/utils/messageErrors';
+import { structuralShareMessages } from '../features/chat/utils/structuralShareMessages';
 
 export function useListRooms() {
   const { actor } = useActor();
@@ -61,7 +62,10 @@ export function useCreateRoom() {
   });
 }
 
-export function useRoomMessages(roomId: RoomId, enabled: boolean = true) {
+export function useRoomMessages(
+  roomId: RoomId, 
+  enabled: boolean = true
+) {
   const { actor } = useActor();
 
   return useQuery<ChatMessage[]>({
@@ -73,8 +77,13 @@ export function useRoomMessages(roomId: RoomId, enabled: boolean = true) {
       return messages as ChatMessage[];
     },
     enabled: !!actor && !!roomId && enabled,
-    refetchInterval: 3000,
-    staleTime: 1000,
+    // Disable automatic polling - messages only refresh on manual reload
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+    // Disable unnecessary refetch triggers to reduce CPU usage
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 2000,
     // Keep previous data while refetching to avoid flicker
     placeholderData: (previousData) => previousData,
     // Apply stable sorting and structural sharing
@@ -82,26 +91,12 @@ export function useRoomMessages(roomId: RoomId, enabled: boolean = true) {
       const sorted = sortMessages(data);
       return sorted;
     },
-    // Structural sharing to prevent unnecessary re-renders
+    // Enhanced structural sharing to prevent unnecessary re-renders
     structuralSharing: (oldData, newData) => {
       if (!oldData || !newData) return newData;
       if (!Array.isArray(oldData) || !Array.isArray(newData)) return newData;
       
-      // If arrays are the same length and all messages match, return old reference
-      if (oldData.length === newData.length) {
-        const allMatch = oldData.every((oldMsg, idx) => {
-          const newMsg = newData[idx];
-          return (
-            oldMsg.messageId === newMsg.messageId &&
-            oldMsg.content === newMsg.content &&
-            oldMsg.reactions.length === newMsg.reactions.length
-          );
-        });
-        
-        if (allMatch) return oldData;
-      }
-      
-      return newData;
+      return structuralShareMessages(oldData, newData);
     },
   });
 }

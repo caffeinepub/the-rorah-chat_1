@@ -5,12 +5,18 @@ import List "mo:core/List";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Set "mo:core/Set";
+import Array "mo:core/Array";
 
+import Nat8 "mo:core/Nat8";
+import Blob "mo:core/Blob";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
+// Add mixin as include
 
 actor {
+  include MixinStorage();
+
   type UserId = Text;
   type RoomId = Text;
   type MessageId = Nat;
@@ -21,7 +27,7 @@ actor {
     userId : UserId;
   };
 
-  type Media = Storage.ExternalBlob;
+  type Media = Blob;
 
   type StoredMessage = {
     messageId : MessageId;
@@ -50,8 +56,6 @@ actor {
     roomId : RoomId;
     name : Text;
   };
-
-  include MixinStorage();
 
   let rooms = Map.empty<RoomId, Room>();
   let roomSet = Set.empty<RoomId>();
@@ -258,3 +262,4 @@ actor {
     rooms.values().toArray();
   };
 };
+

@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Keep the chat message composer/type bar visually fixed at the bottom of the viewport while the message timeline scrolls independently.
+**Goal:** Redeploy the backend and frontend canisters by rebuilding and upgrading/deploying them, without introducing any functional code changes.
 
 **Planned changes:**
-- Update the chat room page/layout so only the message list is scrollable and the composer remains fixed and always clickable at the bottom of the screen.
-- Add sufficient bottom spacing/padding in the scrollable message list so the last message is fully visible above the fixed composer (not hidden behind it).
-- Ensure the fixed-composer behavior remains usable on small/mobile viewports during typical interactions (scrolling, focusing the input, sending a message).
+- Rebuild and upgrade the backend canister using the existing redeploy runbook/scripts.
+- Regenerate backend bindings.
+- Rebuild the frontend and deploy the frontend canister using the existing redeploy runbook/scripts.
+- Run post-deployment verification checks (canister statuses and `listRooms` query).
 
-**User-visible outcome:** Users can scroll through chat messages while the composer stays fixed at the bottom, remains accessible at all times, and the newest/last messages are not obscured by the composer.
+**User-visible outcome:** The application is redeployed successfully (backend and frontend canisters running), and core verification (including `listRooms`) works as before with no functional behavior changes.

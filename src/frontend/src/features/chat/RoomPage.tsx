@@ -2,24 +2,41 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useRoomMessages, useValidateRoom } from '../../hooks/useQueries';
 import { useActor } from '../../hooks/useActor';
 import { useLocalProfile } from '../../hooks/useLocalProfile';
+import { useIdleActivity } from '../chat/hooks/useIdleActivity';
+import { useRafThrottledCallback } from '../../hooks/useRafThrottledCallback';
 import { MessageComposer } from './components/MessageComposer';
 import { MessageItem } from './components/MessageItem';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, RefreshCw, ChevronUp } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { MessageId, PublicMessage } from '../../backend';
 import type { ChatMessage } from './types/chatMessage';
+import { scrollToBottom, isNearBottom, getScrollPosition, setScrollPosition, getScrollViewport } from './utils/scrollViewport';
+import { filterRecentMessages } from './utils/messageVisibility';
 
 interface RoomPageProps {
   roomId: string;
   onLeaveRoom: () => void;
 }
 
+const INITIAL_MESSAGE_WINDOW = 50; // Show only 50 most recent messages initially
+const LOAD_MORE_INCREMENT = 25; // Load 25 more when user clicks "Load older"
+
 export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   const { userId, nickname } = useLocalProfile();
   const { actor } = useActor();
+  const { recordActivity } = useIdleActivity(30000); // 30 seconds idle threshold
+  
   const { data: roomExists, isLoading: isValidatingRoom, isError: isValidationError, refetch: refetchValidation } = useValidateRoom(roomId);
+  
+  const [replyToMessage, setReplyToMessage] = useState<MessageId | null>(null);
+  const [visibleMessageCount, setVisibleMessageCount] = useState(INITIAL_MESSAGE_WINDOW);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const prevScrollHeightRef = useRef<number>(0);
+  const wasNearBottomRef = useRef<boolean>(true);
+  const viewportRef = useRef<HTMLElement | null>(null);
+
   const { 
     data: messages, 
     isLoading: isLoadingMessages, 
@@ -30,25 +47,21 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
     roomId,
     roomExists === true
   );
-  const [replyToMessage, setReplyToMessage] = useState<MessageId | null>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages?.length]);
+  // Filter messages to only show those within the last hour
+  const recentMessages = useMemo(() => {
+    if (!messages) return [];
+    return filterRecentMessages(messages);
+  }, [messages]);
 
-  // Build a memoized lookup map for reply context resolution
+  // Build a memoized lookup map for reply context resolution (from recent messages only)
   const messageMap = useMemo(() => {
-    if (!messages) return new Map<MessageId, PublicMessage>();
     const map = new Map<MessageId, PublicMessage>();
-    messages.forEach((msg) => {
+    recentMessages.forEach((msg) => {
       map.set(msg.messageId, msg);
     });
     return map;
-  }, [messages]);
+  }, [recentMessages]);
 
   // Memoized callback to get reply message
   const getReplyMessage = useCallback(
@@ -58,10 +71,100 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
     [messageMap]
   );
 
+  // Slice messages to show only the most recent ones (bounded rendering from recent messages)
+  const visibleMessages = useMemo(() => {
+    if (recentMessages.length === 0) return [];
+    const startIndex = Math.max(0, recentMessages.length - visibleMessageCount);
+    return recentMessages.slice(startIndex);
+  }, [recentMessages, visibleMessageCount]);
+
+  const hasOlderMessages = recentMessages.length > visibleMessageCount;
+
+  // Clear replyToMessage if the target message is no longer in the visible/recent set
+  useEffect(() => {
+    if (replyToMessage && !messageMap.has(replyToMessage)) {
+      setReplyToMessage(null);
+    }
+  }, [replyToMessage, messageMap]);
+
+  // Handle loading more messages
+  const handleLoadOlder = () => {
+    if (!scrollAreaRef.current) return;
+    
+    // Save current scroll position before adding more messages
+    const currentScrollPos = getScrollPosition(scrollAreaRef.current);
+    prevScrollHeightRef.current = scrollAreaRef.current.scrollHeight;
+    
+    // Increase visible message count
+    setVisibleMessageCount(prev => prev + LOAD_MORE_INCREMENT);
+    
+    // After render, restore scroll position to prevent jump
+    requestAnimationFrame(() => {
+      if (scrollAreaRef.current) {
+        const newScrollHeight = scrollAreaRef.current.scrollHeight;
+        const heightDiff = newScrollHeight - prevScrollHeightRef.current;
+        setScrollPosition(scrollAreaRef.current, currentScrollPos + heightDiff);
+      }
+    });
+    
+    recordActivity();
+  };
+
+  // Auto-scroll to bottom only when user is near bottom and new messages arrive
+  useEffect(() => {
+    if (!scrollAreaRef.current || !visibleMessages.length) return;
+    
+    // Check if user was near bottom before update
+    const shouldAutoScroll = wasNearBottomRef.current;
+    
+    if (shouldAutoScroll) {
+      // Small delay to ensure DOM has updated
+      requestAnimationFrame(() => {
+        scrollToBottom(scrollAreaRef.current, 'smooth');
+      });
+    }
+  }, [visibleMessages.length]);
+
+  // Track if user is near bottom (for auto-scroll decision) with RAF throttling
+  const handleScroll = useRafThrottledCallback(() => {
+    if (!viewportRef.current) return;
+    wasNearBottomRef.current = isNearBottom(null, 100, viewportRef.current);
+  });
+
+  useEffect(() => {
+    if (!scrollAreaRef.current) return;
+    
+    const viewport = getScrollViewport(scrollAreaRef.current);
+    if (!viewport) return;
+    
+    viewportRef.current = viewport;
+    
+    // Register passive scroll listener
+    viewport.addEventListener('scroll', handleScroll, { passive: true });
+    return () => viewport.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  // Stable callback for reply action
+  const handleReply = useCallback((messageId: MessageId) => {
+    setReplyToMessage(messageId);
+    recordActivity();
+  }, [recordActivity]);
+
+  // Activity handler for composer
+  const handleComposerActivity = useCallback(() => {
+    recordActivity();
+  }, [recordActivity]);
+
+  // Manual reload handler
+  const handleReload = useCallback(() => {
+    refetch();
+    recordActivity();
+  }, [refetch, recordActivity]);
+
   // Show connecting state only while actor is null
   if (!actor) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center">
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">Connecting to backend...</p>
@@ -73,7 +176,7 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   // Show validation error state with retry button
   if (isValidationError) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center">
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
         <div className="container max-w-md px-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -100,7 +203,7 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   // Show loading while validating
   if (isValidatingRoom) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center">
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">Validating room...</p>
@@ -112,17 +215,17 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
   // Only show "Room Not Found" when validation has definitively returned false
   if (roomExists === false) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center">
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
         <div className="container max-w-md px-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Room Not Found</AlertTitle>
             <AlertDescription className="mt-2">
-              The room you're trying to access doesn't exist. It may have been deleted or the room code is incorrect.
+              This room does not exist. Please check the room ID and try again.
             </AlertDescription>
           </Alert>
           <div className="mt-4 flex justify-center">
-            <Button onClick={onLeaveRoom}>
+            <Button onClick={onLeaveRoom} variant="default">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Lobby
             </Button>
@@ -132,119 +235,97 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
     );
   }
 
-  // Show loading while messages are being fetched initially
-  if (isLoadingMessages) {
-    return (
-      <div className="flex h-[100dvh] items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="mt-2 text-sm text-muted-foreground">Loading messages...</p>
-        </div>
-      </div>
-    );
-  }
+  const replyMessage = replyToMessage ? messageMap.get(replyToMessage) : undefined;
 
-  const replyToMessageData = replyToMessage ? messageMap.get(replyToMessage) : undefined;
+  // Determine if we have messages but they're all older than 1 hour
+  const hasMessagesButAllOld = messages && messages.length > 0 && recentMessages.length === 0;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden">
+    <div className="flex h-[calc(100vh-8rem)] flex-col">
       {/* Header */}
-      <div className="shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center gap-4 px-4">
-          <Button variant="ghost" size="icon" onClick={onLeaveRoom}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold">{roomId}</h2>
-          </div>
-          {isFetching && !isLoadingMessages && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              <span>Syncing...</span>
+      <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-3">
+        <Button variant="ghost" size="icon" onClick={onLeaveRoom}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold">Room: {roomId}</h2>
+          <p className="text-sm text-muted-foreground">
+            Chatting as {nickname || 'Anonymous'}
+          </p>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <ScrollArea ref={scrollAreaRef} className="flex-1 px-4">
+        <div className="space-y-4 py-4">
+          {hasOlderMessages && (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLoadOlder}
+                className="gap-2"
+              >
+                <ChevronUp className="h-4 w-4" />
+                Load older messages
+              </Button>
             </div>
           )}
+
+          {isLoadingMessages && visibleMessages.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : isError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                Failed to load messages. Please try again.
+              </AlertDescription>
+            </Alert>
+          ) : visibleMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              {hasMessagesButAllOld ? (
+                <>
+                  <p className="text-muted-foreground">No recent messages</p>
+                  <p className="text-sm text-muted-foreground">Messages older than 1 hour are hidden</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted-foreground">No messages yet</p>
+                  <p className="text-sm text-muted-foreground">Be the first to say something!</p>
+                </>
+              )}
+            </div>
+          ) : (
+            visibleMessages.map((message) => (
+              <MessageItem
+                key={message.messageId.toString()}
+                message={message}
+                isOwn={message.userId === userId}
+                currentUserId={userId}
+                roomId={roomId}
+                onReply={handleReply}
+                getReplyMessage={getReplyMessage}
+              />
+            ))
+          )}
         </div>
-      </div>
+      </ScrollArea>
 
-      {/* Messages - scrollable area */}
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <ScrollArea className="h-full" ref={scrollAreaRef}>
-          <div className="container max-w-4xl px-4 py-4 pb-6">
-            {/* Non-blocking error banner for refetch failures */}
-            {isError && messages && messages.length > 0 && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Connection Issue</AlertTitle>
-                <AlertDescription className="flex items-center justify-between gap-4">
-                  <span>Unable to fetch new messages. Showing cached messages.</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => refetch()}
-                    className="shrink-0"
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Retry
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Full error state when no cached messages */}
-            {isError && (!messages || messages.length === 0) ? (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error loading messages</AlertTitle>
-                <AlertDescription className="space-y-2">
-                  <p>Failed to load messages. Please check your connection and try again.</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => refetch()}
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Retry
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            ) : messages && messages.length > 0 ? (
-              <div className="space-y-4">
-                {messages.map((message: ChatMessage) => (
-                  <MessageItem
-                    key={message.clientId || message.messageId.toString()}
-                    message={message}
-                    isOwn={message.userId === userId}
-                    currentUserId={userId}
-                    roomId={roomId}
-                    onReply={() => setReplyToMessage(message.messageId)}
-                    getReplyMessage={getReplyMessage}
-                  />
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            ) : (
-              <div className="flex h-full items-center justify-center text-center text-muted-foreground">
-                <div>
-                  <p className="text-lg font-medium">No messages yet</p>
-                  <p className="text-sm">Be the first to send a message!</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-      </div>
-
-      {/* Message Composer - fixed at bottom */}
-      <div className="shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container max-w-4xl px-4 py-4">
-          <MessageComposer
-            roomId={roomId}
-            userId={userId}
-            nickname={nickname}
-            replyToMessage={replyToMessageData}
-            onCancelReply={() => setReplyToMessage(null)}
-          />
-        </div>
+      {/* Composer */}
+      <div className="border-t border-border bg-card p-4">
+        <MessageComposer
+          roomId={roomId}
+          userId={userId}
+          nickname={nickname}
+          replyToMessage={replyMessage}
+          onCancelReply={() => setReplyToMessage(null)}
+          onActivity={handleComposerActivity}
+          onReload={handleReload}
+          isReloading={isFetching}
+        />
       </div>
     </div>
   );

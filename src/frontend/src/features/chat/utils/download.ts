@@ -11,7 +11,31 @@ export function downloadFromUrl(url: string, filename: string) {
 }
 
 /**
+ * Trigger a download directly from bytes by creating a temporary blob URL.
+ * This is used as a fallback when object URL is not available.
+ */
+export function downloadFromBytes(
+  bytes: Uint8Array,
+  filename: string,
+  mimeType: string = 'application/octet-stream'
+) {
+  try {
+    // Create a new Uint8Array to ensure proper ArrayBuffer type
+    const normalizedBytes = new Uint8Array(bytes);
+    const blob = new Blob([normalizedBytes], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    downloadFromUrl(url, filename);
+    // Clean up the temporary URL after a short delay
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  } catch (error) {
+    console.error('Failed to download from bytes:', error);
+    throw error;
+  }
+}
+
+/**
  * Derive a file extension from a MIME type.
+ * Returns 'bin' as a stable default for unknown types.
  */
 export function getExtensionFromMimeType(mimeType: string): string {
   const mimeMap: Record<string, string> = {
@@ -23,6 +47,7 @@ export function getExtensionFromMimeType(mimeType: string): string {
     'video/webm': 'webm',
     'application/pdf': 'pdf',
     'text/plain': 'txt',
+    'application/octet-stream': 'bin',
   };
   return mimeMap[mimeType] || 'bin';
 }

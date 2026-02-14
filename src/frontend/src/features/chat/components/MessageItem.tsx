@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useMemo } from 'react';
+import { useState, memo, useMemo } from 'react';
 import { useEditMessage, useDeleteMessage, usePostMessage } from '../../../hooks/useQueries';
 import { ReactionBar } from '../reactions/ReactionBar';
 import { Button } from '@/components/ui/button';
@@ -19,20 +19,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { MoreVertical, Edit, Trash, Reply, Check, X, Download, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { MoreVertical, Edit, Trash, Reply, Check, X, Download, Loader2, RefreshCw, AlertCircle, FileQuestion } from 'lucide-react';
 import { toast } from 'sonner';
 import type { PublicMessage, RoomId, UserId, MessageId } from '../../../backend';
 import type { ChatMessage } from '../types/chatMessage';
 import { cn } from '@/lib/utils';
 import { getDisplayName } from '../utils/displayName';
-import { downloadFromUrl, getExtensionFromMimeType } from '../utils/download';
+import { downloadFromUrl, downloadFromBytes, getExtensionFromMimeType } from '../utils/download';
+import { useAttachmentObjectUrl } from '../hooks/useAttachmentObjectUrl';
+import { detectMimeType } from '../utils/detectMimeType';
+import { getMediaFingerprint } from '../utils/mediaFingerprint';
+import { getCachedAttachmentMetadata } from '../utils/attachmentMemo';
 
 interface MessageItemProps {
   message: ChatMessage;
   isOwn: boolean;
   currentUserId: UserId;
   roomId: RoomId;
-  onReply: () => void;
+  onReply: (messageId: MessageId) => void;
   getReplyMessage: (messageId: MessageId) => PublicMessage | undefined;
 }
 
@@ -47,8 +51,6 @@ export const MessageItem = memo(function MessageItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
-  const [mimeType, setMimeType] = useState<string | null>(null);
 
   const editMutation = useEditMessage();
   const deleteMutation = useDeleteMessage();
@@ -60,51 +62,44 @@ export const MessageItem = memo(function MessageItem({
   const isPending = message.clientStatus === 'sending';
   const isFailed = message.clientStatus === 'failed';
 
-  // Detect MIME type from media bytes (simple heuristic)
-  const detectMimeType = useMemo(() => {
-    return (bytes: Uint8Array): string => {
-      if (bytes.length < 4) return 'application/octet-stream';
-      
-      // Check magic numbers for common file types
-      const header = Array.from(bytes.slice(0, 12))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      
-      // JPEG
-      if (header.startsWith('ffd8ff')) return 'image/jpeg';
-      // PNG
-      if (header.startsWith('89504e47')) return 'image/png';
-      // GIF
-      if (header.startsWith('474946')) return 'image/gif';
-      // WebP
-      if (header.includes('57454250')) return 'image/webp';
-      // MP4
-      if (header.includes('667479706d703432') || header.includes('667479706973')) return 'video/mp4';
-      // WebM
-      if (header.startsWith('1a45dfa3')) return 'video/webm';
-      // PDF
-      if (header.startsWith('255044462d')) return 'application/pdf';
-      
-      return 'application/octet-stream';
-    };
-  }, []);
-
-  // Convert media bytes to blob URL for display
-  useEffect(() => {
-    if (message.media && message.media.length > 0) {
-      const mediaArray = new Uint8Array(message.media);
-      const detectedMimeType = detectMimeType(mediaArray);
-      setMimeType(detectedMimeType);
-      const blob = new Blob([mediaArray], { type: detectedMimeType });
-      const url = URL.createObjectURL(blob);
-      setMediaUrl(url);
-
-      // Cleanup blob URL on unmount
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+  // Normalize media bytes to Uint8Array for both optimistic and fetched messages
+  const normalizedMedia = useMemo(() => {
+    if (!message.media) return undefined;
+    
+    // If already a Uint8Array, return as-is
+    if (message.media instanceof Uint8Array) {
+      return message.media;
     }
-  }, [message.media, detectMimeType]);
+    
+    // Convert array-like objects to Uint8Array
+    try {
+      return new Uint8Array(message.media as ArrayLike<number>);
+    } catch (error) {
+      console.error('Failed to normalize media bytes:', error);
+      return undefined;
+    }
+  }, [message.media]);
+
+  // Detect MIME type using lightweight detection with memoization
+  const mimeType = useMemo(() => {
+    if (!normalizedMedia || normalizedMedia.length === 0) return null;
+    
+    const fingerprint = getMediaFingerprint(normalizedMedia);
+    
+    const metadata = getCachedAttachmentMetadata(fingerprint, () => ({
+      mimeType: detectMimeType(normalizedMedia),
+    }));
+    
+    return metadata.mimeType;
+  }, [normalizedMedia]);
+
+  // Use the hook for attachment URLs with proper caching and cleanup
+  const mediaUrl = useAttachmentObjectUrl(normalizedMedia, mimeType || 'application/octet-stream');
+
+  // Determine if we have an attachment that failed to render
+  const hasAttachment = !!message.media;
+  const hasValidMedia = normalizedMedia && normalizedMedia.length > 0;
+  const attachmentFailed = hasAttachment && (!hasValidMedia || !mediaUrl);
 
   const handleEdit = async () => {
     if (!editContent.trim()) {
@@ -160,10 +155,24 @@ export const MessageItem = memo(function MessageItem({
   };
 
   const handleDownload = () => {
-    if (!mediaUrl || !mimeType) return;
-    const extension = getExtensionFromMimeType(mimeType);
+    const safeMimeType = mimeType || 'application/octet-stream';
+    const extension = getExtensionFromMimeType(safeMimeType);
     const filename = `attachment_${message.messageId}.${extension}`;
-    downloadFromUrl(mediaUrl, filename);
+
+    // Try to download from URL first (if available)
+    if (mediaUrl) {
+      downloadFromUrl(mediaUrl, filename);
+    } 
+    // Fallback to downloading from bytes directly
+    else if (normalizedMedia && normalizedMedia.length > 0) {
+      downloadFromBytes(normalizedMedia, filename, safeMimeType);
+    } else {
+      toast.error('Unable to download attachment');
+    }
+  };
+
+  const handleReplyClick = () => {
+    onReply(message.messageId);
   };
 
   const isImage = mimeType?.startsWith('image/');
@@ -255,121 +264,119 @@ export const MessageItem = memo(function MessageItem({
             <>
               <p className="whitespace-pre-wrap break-words text-sm">{message.content}</p>
 
-              {/* Media display */}
-              {mediaUrl && (
-                <div className="mt-2">
+              {/* Media attachment - successful render */}
+              {mediaUrl && hasValidMedia && (
+                <div className="mt-2 space-y-2">
                   {isImage && (
-                    <div className="relative group">
+                    <>
                       <img
                         src={mediaUrl}
                         alt="Attachment"
                         className="max-h-64 rounded-lg object-contain"
                       />
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
                         onClick={handleDownload}
-                        title="Download image"
+                        className="w-full"
                       >
-                        <Download className="h-3 w-3 mr-1" />
-                        Download
+                        <Download className="mr-1 h-3 w-3" />
+                        Download Image
                       </Button>
-                    </div>
+                    </>
                   )}
                   {isVideo && (
-                    <div className="relative group">
+                    <>
                       <video
                         src={mediaUrl}
                         controls
                         className="max-h-64 rounded-lg"
                       />
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
                         onClick={handleDownload}
-                        title="Download video"
+                        className="w-full"
                       >
-                        <Download className="h-3 w-3 mr-1" />
+                        <Download className="mr-1 h-3 w-3" />
+                        Download Video
+                      </Button>
+                    </>
+                  )}
+                  {!isImage && !isVideo && (
+                    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2">
+                      <span className="text-xs">Attachment</span>
+                      <Button size="sm" variant="outline" onClick={handleDownload}>
+                        <Download className="mr-1 h-3 w-3" />
                         Download
                       </Button>
                     </div>
                   )}
-                  {!isImage && !isVideo && (
-                    <div className="flex items-center gap-2 rounded-lg border border-border bg-background/50 p-2">
-                      <div className="flex-1">
-                        <p className="text-xs font-medium">Attachment</p>
-                        <p className="text-xs text-muted-foreground">{mimeType}</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleDownload}
-                        title="Download file"
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
-                    </div>
+                </div>
+              )}
+
+              {/* Media attachment - failed to render */}
+              {attachmentFailed && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-2">
+                    <FileQuestion className="h-4 w-4 shrink-0 text-destructive" />
+                    <span className="text-xs text-destructive">
+                      Unable to display attachment
+                    </span>
+                  </div>
+                  {normalizedMedia && normalizedMedia.length > 0 && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleDownload}
+                      className="w-full"
+                    >
+                      <Download className="mr-1 h-3 w-3" />
+                      Download Attachment
+                    </Button>
                   )}
                 </div>
               )}
 
               {/* Failed state with error message and retry */}
               {isFailed && (
-                <div className="mt-2 space-y-2">
-                  <div className="flex items-start gap-2 rounded-lg bg-destructive/10 p-2">
-                    <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-destructive">Failed to send</p>
-                      {message.clientErrorText && (
-                        <p className="text-xs text-destructive/80 mt-0.5">
-                          {message.clientErrorText}
-                        </p>
-                      )}
-                    </div>
+                <div className="mt-2 flex items-start gap-2 rounded-lg border border-destructive bg-destructive/10 p-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+                  <div className="flex-1 space-y-1">
+                    <p className="text-xs text-destructive">
+                      {message.clientErrorText || 'Failed to send message'}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRetry}
+                      disabled={postMessageMutation.isPending}
+                      className="h-7 text-xs"
+                    >
+                      <RefreshCw className="mr-1 h-3 w-3" />
+                      Retry
+                    </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleRetry}
-                    disabled={postMessageMutation.isPending}
-                    className="w-full"
-                  >
-                    {postMessageMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        Retrying...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="mr-2 h-3 w-3" />
-                        Retry
-                      </>
-                    )}
-                  </Button>
                 </div>
               )}
             </>
           )}
-
-          {!isPending && !isFailed && (
-            <p className="mt-1 text-xs opacity-70">
-              {new Date(Number(message.timestamp) / 1000000).toLocaleTimeString()}
-            </p>
-          )}
         </div>
 
-        {/* Reactions and reply button */}
+        {/* Reactions and Reply button */}
         {!isPending && !isFailed && (
           <div className="flex items-center gap-2">
             <ReactionBar
               message={message}
               currentUserId={currentUserId}
               roomId={roomId}
-              align={isOwn ? 'end' : 'start'}
             />
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onReply}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReplyClick}
+              className="h-6 px-2 text-xs"
+            >
               <Reply className="mr-1 h-3 w-3" />
               Reply
             </Button>
@@ -381,14 +388,14 @@ export const MessageItem = memo(function MessageItem({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this message? This action cannot be undone.
+              This action cannot be undone. This will permanently delete your message.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
