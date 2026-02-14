@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Send, Paperclip, X, Loader2, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { ExternalBlob } from '../../../backend';
 import type { PublicMessage, RoomId, UserId } from '../../../backend';
 import { getDisplayName } from '../utils/displayName';
 
@@ -90,13 +91,18 @@ export function MessageComposer(props: MessageComposerProps) {
     }
 
     try {
-      let mediaBytes: Uint8Array | null = null;
+      let media: ExternalBlob | null = null;
 
       if (selectedFile) {
         setUploadProgress(10);
         const arrayBuffer = await selectedFile.arrayBuffer();
-        mediaBytes = new Uint8Array(arrayBuffer);
+        const mediaBytes = new Uint8Array(arrayBuffer);
         setUploadProgress(50);
+        
+        // Convert Uint8Array to ExternalBlob with upload progress tracking
+        media = ExternalBlob.fromBytes(mediaBytes).withUploadProgress((percentage) => {
+          setUploadProgress(50 + percentage / 2); // 50-100%
+        });
       }
 
       // Generate a unique client ID for optimistic updates
@@ -106,7 +112,7 @@ export function MessageComposer(props: MessageComposerProps) {
         userId,
         roomId,
         content: content.trim(),
-        media: mediaBytes,
+        media,
         replyTo: replyToMessage ? replyToMessage.messageId : null,
         clientId,
       });

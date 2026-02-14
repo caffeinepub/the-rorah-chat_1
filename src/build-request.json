@@ -1,35 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Redeploy backend and frontend canisters (no functional changes)",
-  "priority": "normal",
+  "title": "Fix backend runtime errors affecting message reload and redeploy",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Perform a redeploy by rebuilding and upgrading the backend canister, regenerating backend bindings, rebuilding the frontend, and deploying the frontend canister, following the existing redeploy runbook/scripts.",
-      "target": "both",
+      "text": "Investigate and fix the Motoko backend runtime errors that users encounter during normal app usage (especially when reloading room messages), and make backend message retrieval/posting resilient for rooms that exist but have missing/partial message state (e.g., room present in the room set but no initialized message list).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-10"
+          "msg-5"
         ],
         "quotes": [
-          "redeploy again"
+          "i keep getting backend errors, fix the issue and redeploy the app"
         ]
       },
       "acceptanceCriteria": [
-        "Running the redeploy process completes without errors (backend build, backend upgrade, binding generation, frontend build, frontend deploy).",
-        "Post-deployment verification checks pass: backend canister status is Running, frontend canister status is Running, and the backend query call `listRooms` succeeds.",
-        "No functional code changes are introduced as part of the redeploy."
+        "Backend canister no longer traps/errors when calling message-related methods (e.g., getMessages, postMessage, editMessage, deleteMessage, reactToMessage) for any roomId present in backend state.",
+        "If a room exists but its message list entry is missing/uninitialized, the backend self-heals (initializes the message list) and returns a valid response (e.g., getMessages returns an empty array, postMessage succeeds and persists the message).",
+        "The fix does not break existing room validation behavior (validateRoom continues to return false for empty room IDs and for non-existent rooms)."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Redeploy the application after the backend fix and verify the deployment using the existing redeploy scripts and checks, ensuring the backend and frontend canisters are running and a basic backend query succeeds.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "fix the issue and redeploy the app"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Run the existing automated redeploy flow (frontend/scripts/redeploy.sh) successfully without errors.",
+        "Run the existing post-deploy verification (frontend/scripts/redeploy-verify.sh) successfully; it confirms both canisters are running and the backend query test (listRooms) succeeds.",
+        "After redeploy, manually verify from the UI that entering a room and using the reload flow no longer produces backend errors in normal conditions."
       ]
     }
   ],
   "constraints": [
-    "Do not introduce functional code changes during the redeploy (deployment-only operation).",
-    "Keep all Motoko logic within the existing single-actor architecture (backend/main.mo).",
-    "Do not modify files under frontend immutable paths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui)."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Only add backend/migration.mo if the final implementation requires upgrading existing stable state; otherwise do not introduce a migration file.",
+    "Do not edit files under frontend immutablePaths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui); compose around them if frontend adjustments are needed."
   ],
   "nonGoals": [
-    "Adding or changing application features (e.g., chat behavior, message visibility rules).",
-    "Schema/state migrations unless required by an intentional functional change."
+    "Adding new product features unrelated to fixing backend errors and redeploying.",
+    "Introducing third-party services, external databases, or non-supported backend technologies.",
+    "Implementing real-time messaging via websockets/push notifications."
   ],
   "imageRequirements": {
     "required": [],

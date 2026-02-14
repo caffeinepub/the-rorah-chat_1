@@ -10,11 +10,11 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export type Media = Uint8Array;
+export type ExternalBlob = Uint8Array;
 export type MessageId = bigint;
 export type Nickname = string;
 export interface PublicMessage {
-  'media' : [] | [Media],
+  'media' : [] | [ExternalBlob],
   'content' : string,
   'nickname' : Nickname,
   'messageId' : MessageId,
@@ -60,17 +60,17 @@ export interface _SERVICE {
   'deleteMessage' : ActorMethod<[UserId, RoomId, MessageId], undefined>,
   'editMessage' : ActorMethod<
     [UserId, RoomId, MessageId, string],
-    PublicMessage
+    [] | [PublicMessage]
   >,
   'getMessages' : ActorMethod<[RoomId, bigint, bigint], Array<PublicMessage>>,
   'listRooms' : ActorMethod<[], Array<Room>>,
   'postMessage' : ActorMethod<
-    [UserId, RoomId, string, [] | [Media], [] | [MessageId]],
-    PublicMessage
+    [UserId, RoomId, string, [] | [ExternalBlob], [] | [MessageId]],
+    [] | [PublicMessage]
   >,
   'reactToMessage' : ActorMethod<
     [UserId, RoomId, MessageId, string],
-    PublicMessage
+    [] | [PublicMessage]
   >,
   'setNickname' : ActorMethod<[UserId, string], undefined>,
   'validateRoom' : ActorMethod<[RoomId], boolean>,

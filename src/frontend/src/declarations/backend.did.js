@@ -22,12 +22,12 @@ export const _CaffeineStorageRefillResult = IDL.Record({
 export const RoomId = IDL.Text;
 export const UserId = IDL.Text;
 export const MessageId = IDL.Nat;
-export const Media = IDL.Vec(IDL.Nat8);
+export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const Nickname = IDL.Text;
 export const Time = IDL.Int;
 export const Reaction = IDL.Record({ 'userId' : UserId, 'emoji' : IDL.Text });
 export const PublicMessage = IDL.Record({
-  'media' : IDL.Opt(Media),
+  'media' : IDL.Opt(ExternalBlob),
   'content' : IDL.Text,
   'nickname' : Nickname,
   'messageId' : MessageId,
@@ -70,7 +70,7 @@ export const idlService = IDL.Service({
   'deleteMessage' : IDL.Func([UserId, RoomId, MessageId], [], []),
   'editMessage' : IDL.Func(
       [UserId, RoomId, MessageId, IDL.Text],
-      [PublicMessage],
+      [IDL.Opt(PublicMessage)],
       [],
     ),
   'getMessages' : IDL.Func(
@@ -80,13 +80,13 @@ export const idlService = IDL.Service({
     ),
   'listRooms' : IDL.Func([], [IDL.Vec(Room)], ['query']),
   'postMessage' : IDL.Func(
-      [UserId, RoomId, IDL.Text, IDL.Opt(Media), IDL.Opt(MessageId)],
-      [PublicMessage],
+      [UserId, RoomId, IDL.Text, IDL.Opt(ExternalBlob), IDL.Opt(MessageId)],
+      [IDL.Opt(PublicMessage)],
       [],
     ),
   'reactToMessage' : IDL.Func(
       [UserId, RoomId, MessageId, IDL.Text],
-      [PublicMessage],
+      [IDL.Opt(PublicMessage)],
       [],
     ),
   'setNickname' : IDL.Func([UserId, IDL.Text], [], []),
@@ -110,12 +110,12 @@ export const idlFactory = ({ IDL }) => {
   const RoomId = IDL.Text;
   const UserId = IDL.Text;
   const MessageId = IDL.Nat;
-  const Media = IDL.Vec(IDL.Nat8);
+  const ExternalBlob = IDL.Vec(IDL.Nat8);
   const Nickname = IDL.Text;
   const Time = IDL.Int;
   const Reaction = IDL.Record({ 'userId' : UserId, 'emoji' : IDL.Text });
   const PublicMessage = IDL.Record({
-    'media' : IDL.Opt(Media),
+    'media' : IDL.Opt(ExternalBlob),
     'content' : IDL.Text,
     'nickname' : Nickname,
     'messageId' : MessageId,
@@ -158,7 +158,7 @@ export const idlFactory = ({ IDL }) => {
     'deleteMessage' : IDL.Func([UserId, RoomId, MessageId], [], []),
     'editMessage' : IDL.Func(
         [UserId, RoomId, MessageId, IDL.Text],
-        [PublicMessage],
+        [IDL.Opt(PublicMessage)],
         [],
       ),
     'getMessages' : IDL.Func(
@@ -168,13 +168,13 @@ export const idlFactory = ({ IDL }) => {
       ),
     'listRooms' : IDL.Func([], [IDL.Vec(Room)], ['query']),
     'postMessage' : IDL.Func(
-        [UserId, RoomId, IDL.Text, IDL.Opt(Media), IDL.Opt(MessageId)],
-        [PublicMessage],
+        [UserId, RoomId, IDL.Text, IDL.Opt(ExternalBlob), IDL.Opt(MessageId)],
+        [IDL.Opt(PublicMessage)],
         [],
       ),
     'reactToMessage' : IDL.Func(
         [UserId, RoomId, MessageId, IDL.Text],
-        [PublicMessage],
+        [IDL.Opt(PublicMessage)],
         [],
       ),
     'setNickname' : IDL.Func([UserId, IDL.Text], [], []),

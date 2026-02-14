@@ -2,18 +2,15 @@ import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
 import List "mo:core/List";
-import Iter "mo:core/Iter";
-import Runtime "mo:core/Runtime";
 import Set "mo:core/Set";
 import Array "mo:core/Array";
 
-import Nat8 "mo:core/Nat8";
-import Blob "mo:core/Blob";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
-// Add mixin as include
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   include MixinStorage();
 
@@ -27,15 +24,13 @@ actor {
     userId : UserId;
   };
 
-  type Media = Blob;
-
   type StoredMessage = {
     messageId : MessageId;
     userId : UserId;
     roomId : RoomId;
     content : Text;
     timestamp : Time.Time;
-    media : ?Media;
+    media : ?Storage.ExternalBlob;
     reactions : [Reaction];
     replyTo : ?MessageId;
   };
@@ -46,7 +41,7 @@ actor {
     roomId : RoomId;
     content : Text;
     timestamp : Time.Time;
-    media : ?Media;
+    media : ?Storage.ExternalBlob;
     reactions : [Reaction];
     replyTo : ?MessageId;
     nickname : Nickname;
@@ -65,7 +60,7 @@ actor {
 
   public shared ({ caller }) func createRoom(roomId : RoomId, name : Text) : async () {
     if (roomSet.contains(roomId)) {
-      Runtime.trap("Room with this ID already exists!");
+      return ();
     };
 
     let newRoom : Room = {
@@ -79,12 +74,15 @@ actor {
   };
 
   public query ({ caller }) func validateRoom(roomId : RoomId) : async Bool {
-    roomId != "" and roomSet.size() != 0 and roomSet.contains(roomId)
+    if (roomId == "" or roomSet.isEmpty()) {
+      return false;
+    };
+    roomSet.contains(roomId);
   };
 
-  public shared ({ caller }) func postMessage(userId : UserId, roomId : RoomId, content : Text, media : ?Media, replyTo : ?MessageId) : async PublicMessage {
+  public shared ({ caller }) func postMessage(userId : UserId, roomId : RoomId, content : Text, media : ?Storage.ExternalBlob, replyTo : ?MessageId) : async ?PublicMessage {
     if (not roomSet.contains(roomId)) {
-      Runtime.trap("Room does not exist");
+      return null;
     };
 
     let storedMessage : StoredMessage = {
@@ -100,135 +98,138 @@ actor {
 
     nextMessageId += 1;
 
-    switch (messages.get(roomId)) {
-      case (null) { Runtime.trap("Room has no messages") };
-      case (?messageList) {
-        messageList.add(storedMessage);
-        toPublic(storedMessage);
-      };
+    let currentMessages = switch (messages.get(roomId)) {
+      case (null) { List.empty<StoredMessage>() };
+      case (?existing) { existing };
     };
+
+    currentMessages.add(storedMessage);
+    messages.add(roomId, currentMessages);
+    ?toPublic(storedMessage);
   };
 
   public query ({ caller }) func getMessages(roomId : RoomId, start : Nat, count : Nat) : async [PublicMessage] {
     if (not roomSet.contains(roomId)) {
-      Runtime.trap("Room does not exist");
+      return [];
     };
 
-    switch (messages.get(roomId)) {
-      case (null) { Runtime.trap("Room has no messages") };
-      case (?messageList) {
-        let reversedList = messageList.reverse();
-        let totalMessages = reversedList.size();
-        if (start >= totalMessages) {
-          return [];
-        };
-
-        let end = if (start + count >= totalMessages) {
-          totalMessages;
-        } else {
-          start + count;
-        };
-
-        let slicedMessages = reversedList.values().toArray().sliceToArray(start, end);
-        slicedMessages.map(toPublic);
-      };
+    let currentMessages = switch (messages.get(roomId)) {
+      case (null) { List.empty<StoredMessage>() };
+      case (?existing) { existing };
     };
+
+    let reversedList = currentMessages.reverse();
+    let totalMessages = reversedList.size();
+    if (start >= totalMessages) {
+      return [];
+    };
+
+    let end = if (start + count > totalMessages) {
+      totalMessages;
+    } else {
+      start + count;
+    };
+
+    let slicedMessages = reversedList.toArray().sliceToArray(start, end);
+    Array.tabulate(
+      slicedMessages.size(),
+      func(i) { toPublic(slicedMessages[i]) },
+    );
   };
 
-  public shared ({ caller }) func editMessage(userId : UserId, roomId : RoomId, messageId : MessageId, newContent : Text) : async PublicMessage {
+  public shared ({ caller }) func editMessage(userId : UserId, roomId : RoomId, messageId : MessageId, newContent : Text) : async ?PublicMessage {
     if (not roomSet.contains(roomId)) {
-      Runtime.trap("Room does not exist");
+      return null;
     };
 
-    switch (messages.get(roomId)) {
-      case (null) { Runtime.trap("Room has no messages") };
-      case (?messageList) {
-        let foundMessage = messageList.values().find(func(m) { m.messageId == messageId });
+    let currentMessages = switch (messages.get(roomId)) {
+      case (null) { List.empty<StoredMessage>() };
+      case (?existing) { existing };
+    };
 
-        switch (foundMessage) {
-          case (null) { Runtime.trap("Message not found") };
-          case (?message) {
-            if (message.userId != userId) {
-              Runtime.trap("You can only edit your own messages");
-            };
+    let foundMessage = currentMessages.values().find(func(m) { m.messageId == messageId });
 
-            let updatedMessage : StoredMessage = {
-              message with content = newContent
-            };
-
-            let updateIter = messageList.values().map(
-              func(m) {
-                if (m.messageId == messageId) { updatedMessage } else { m };
-              }
-            );
-
-            let newMessageList = List.fromIter<StoredMessage>(updateIter);
-            messages.add(roomId, newMessageList);
-            toPublic(updatedMessage);
-          };
+    switch (foundMessage) {
+      case (null) { null };
+      case (?message) {
+        if (message.userId != userId) {
+          return null;
         };
+
+        let updatedMessage : StoredMessage = {
+          message with content = newContent
+        };
+
+        let updateIter = currentMessages.values().map(
+          func(m) {
+            if (m.messageId == messageId) { updatedMessage } else { m };
+          }
+        );
+
+        let newMessageList = List.fromIter<StoredMessage>(updateIter);
+        messages.add(roomId, newMessageList);
+        ?toPublic(updatedMessage);
       };
     };
   };
 
   public shared ({ caller }) func deleteMessage(userId : UserId, roomId : RoomId, messageId : MessageId) : async () {
     if (not roomSet.contains(roomId)) {
-      Runtime.trap("Room does not exist");
+      return ();
     };
 
-    switch (messages.get(roomId)) {
-      case (null) { Runtime.trap("Room has no messages") };
-      case (?messageList) {
-        let foundMessage = messageList.values().find(func(m) { m.messageId == messageId });
+    let currentMessages = switch (messages.get(roomId)) {
+      case (null) { List.empty<StoredMessage>() };
+      case (?existing) { existing };
+    };
 
-        switch (foundMessage) {
-          case (null) { Runtime.trap("Message not found") };
-          case (?message) {
-            if (message.userId != userId) {
-              Runtime.trap("You can only delete your own messages");
-            };
+    let foundMessage = currentMessages.values().find(func(m) { m.messageId == messageId });
 
-            let filteredMessages = messageList.filter(func(m) { m.messageId != messageId });
-            messages.add(roomId, filteredMessages);
-          };
+    switch (foundMessage) {
+      case (null) { () };
+      case (?message) {
+        if (message.userId != userId) {
+          return ();
         };
+        let filteredMessages = currentMessages.filter(func(m) { m.messageId != messageId });
+        messages.add(roomId, filteredMessages);
       };
     };
   };
 
-  public shared ({ caller }) func reactToMessage(userId : UserId, roomId : RoomId, messageId : MessageId, emoji : Text) : async PublicMessage {
+  public shared ({ caller }) func reactToMessage(userId : UserId, roomId : RoomId, messageId : MessageId, emoji : Text) : async ?PublicMessage {
     if (not roomSet.contains(roomId)) {
-      Runtime.trap("Room does not exist");
+      return null;
     };
 
-    switch (messages.get(roomId)) {
-      case (null) { Runtime.trap("Room has no messages") };
-      case (?messageList) {
-        let foundMessage = messageList.values().find(func(m) { m.messageId == messageId });
+    let currentMessages = switch (messages.get(roomId)) {
+      case (null) { List.empty<StoredMessage>() };
+      case (?existing) { existing };
+    };
 
-        switch (foundMessage) {
-          case (null) { Runtime.trap("Message not found") };
-          case (?message) {
-            let updatedReactions = List.fromArray<Reaction>(message.reactions);
-            let newReaction : Reaction = {
-              emoji;
-              userId;
-            };
-            updatedReactions.add(newReaction);
+    let foundMessage = currentMessages.values().find(func(m) { m.messageId == messageId });
 
-            let updatedMessage : StoredMessage = {
-              message with reactions = updatedReactions.toArray()
-            };
-
-            let updateIter = messageList.values().map(
-              func(m) {
-                if (m.messageId == messageId) { updatedMessage } else { m };
-              }
-            );
-            messages.add(roomId, List.fromIter<StoredMessage>(updateIter));
-            toPublic(updatedMessage);
-          };
+    switch (foundMessage) {
+      case (null) { null };
+      case (?message) {
+        let updatedReactions = List.fromArray<Reaction>(message.reactions);
+        let newReaction : Reaction = {
+          emoji;
+          userId;
         };
+        updatedReactions.add(newReaction);
+
+        let updatedMessage : StoredMessage = {
+          message with reactions = updatedReactions.toArray()
+        };
+
+        let updateIter = currentMessages.values().map(
+          func(m) {
+            if (m.messageId == messageId) { updatedMessage } else { m };
+          }
+        );
+        messages.add(roomId, List.fromIter<StoredMessage>(updateIter));
+        ?toPublic(updatedMessage);
       };
     };
   };
@@ -262,4 +263,3 @@ actor {
     rooms.values().toArray();
   };
 };
-

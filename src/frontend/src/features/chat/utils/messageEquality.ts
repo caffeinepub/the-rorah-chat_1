@@ -1,5 +1,6 @@
 import type { ChatMessage } from '../types/chatMessage';
 import { getMediaFingerprint } from './mediaFingerprint';
+import type { ExternalBlob } from '../../../backend';
 
 /**
  * Check if two messages are equal for the purposes of structural sharing.
@@ -14,9 +15,17 @@ export function messagesEqual(a: ChatMessage, b: ChatMessage): boolean {
   if (a.replyTo !== b.replyTo) return false;
   
   // Compare media by fingerprint (not full byte comparison)
-  const aMedia = a.media ? new Uint8Array(a.media) : undefined;
-  const bMedia = b.media ? new Uint8Array(b.media) : undefined;
-  if (getMediaFingerprint(aMedia) !== getMediaFingerprint(bMedia)) return false;
+  // Handle both Uint8Array and ExternalBlob types
+  const aMedia = a.media instanceof Uint8Array ? a.media : undefined;
+  const bMedia = b.media instanceof Uint8Array ? b.media : undefined;
+  
+  // If both are ExternalBlob or other types, compare by reference
+  if (!aMedia && !bMedia) {
+    if (a.media !== b.media) return false;
+  } else {
+    // Compare fingerprints for Uint8Array
+    if (getMediaFingerprint(aMedia) !== getMediaFingerprint(bMedia)) return false;
+  }
   
   // Compare reactions efficiently
   if (a.reactions.length > 0) {

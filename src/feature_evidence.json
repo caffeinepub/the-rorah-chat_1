@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-perform-a-redeploy-by-rebuilding-and-upgrading-the-backend-canister-regenerating-backend-bindings-rebuilding-the-frontend-and-deploying-the-frontend-canister-following-the-existing-redeploy-runbook-scripts",
-      "featureTitle": "Perform a redeploy by rebuilding and upgrading the backend canister, regenerating backend bindings, rebuilding the frontend, and deploying the frontend canister, following the existing redeploy runbook/scripts.",
+      "featureId": "feature-redeploy-the-application-after-the-backend-fix-and-verify-the-deployment-using-the-existing-redeploy-scripts-and-checks-ensuring-the-backend-and-frontend-canisters-are-running-and-a-basic-backend-query-succeeds",
+      "featureTitle": "Redeploy the application after the backend fix and verify the deployment using the existing redeploy scripts and checks, ensuring the backend and frontend canisters are running and a basic backend query succeeds.",
       "files": [
         "frontend/REDEPLOY.md",
         "frontend/scripts/redeploy-verify.sh",
@@ -18,7 +18,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-1"
+        "REQ-2"
       ],
       "confidence": "high"
     }

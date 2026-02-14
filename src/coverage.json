@@ -1,34 +1,42 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T10:35:54.319Z",
+  "generatedAt": "2026-02-14T13:39:59.222Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
+    "total": 2,
     "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Perform a redeploy by rebuilding and upgrading the backend canister, regenerating backend bindings, rebuilding the frontend, and deploying the frontend canister, following the existing redeploy runbook/scripts.",
+        "summary": "Investigate and fix the Motoko backend runtime errors that users encounter during normal app usage (especially when reloading room messages), and make backend message retrieval/posting resilient for rooms that exist but have missing/partial message state (e.g., room present in the room set but no initialized message list).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Redeploy the application after the backend fix and verify the deployment using the existing redeploy scripts and checks, ensuring the backend and frontend canisters are running and a basic backend query succeeds.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/REDEPLOY.md",
           "frontend/scripts/redeploy.sh",
-          "frontend/scripts/redeploy-verify.sh"
+          "frontend/scripts/redeploy-verify.sh",
+          "frontend/REDEPLOY.md"
         ],
         "matchedFiles": [
-          "frontend/REDEPLOY.md",
           "frontend/scripts/redeploy.sh",
-          "frontend/scripts/redeploy-verify.sh"
+          "frontend/scripts/redeploy-verify.sh",
+          "frontend/REDEPLOY.md"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
@@ -36,6 +44,15 @@
     "frontend/REDEPLOY.md",
     "frontend/scripts/redeploy-verify.sh",
     "frontend/scripts/redeploy.sh",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/features/chat/components/MessageComposer.tsx",
+    "frontend/src/features/chat/components/MessageItem.tsx",
+    "frontend/src/features/chat/types/chatMessage.ts",
+    "frontend/src/features/chat/utils/messageEquality.ts",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

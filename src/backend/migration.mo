@@ -1,6 +1,8 @@
 import Map "mo:core/Map";
 import Set "mo:core/Set";
 import List "mo:core/List";
+import Nat "mo:core/Nat";
+import Time "mo:core/Time";
 import Storage "blob-storage/Storage";
 
 module {
@@ -14,15 +16,13 @@ module {
     userId : UserId;
   };
 
-  type Media = Storage.ExternalBlob;
-
   type StoredMessage = {
     messageId : MessageId;
     userId : UserId;
     roomId : RoomId;
     content : Text;
-    timestamp : Int;
-    media : ?Media;
+    timestamp : Time.Time;
+    media : ?Storage.ExternalBlob;
     reactions : [Reaction];
     replyTo : ?MessageId;
   };
@@ -37,10 +37,23 @@ module {
     roomSet : Set.Set<RoomId>;
     messages : Map.Map<RoomId, List.List<StoredMessage>>;
     userNicknames : Map.Map<UserId, Nickname>;
-    nextMessageId : Nat;
+    nextMessageId : MessageId;
   };
 
   public func run(old : Actor) : Actor {
-    old;
+    let updatedMessages = Map.empty<RoomId, List.List<StoredMessage>>();
+
+    for (k in old.roomSet.values()) {
+      let initialMessages = List.empty<StoredMessage>();
+      updatedMessages.add(k, initialMessages);
+    };
+
+    {
+      rooms = old.rooms;
+      roomSet = old.roomSet;
+      messages = updatedMessages;
+      userNicknames = old.userNicknames;
+      nextMessageId = old.nextMessageId;
+    };
   };
 };

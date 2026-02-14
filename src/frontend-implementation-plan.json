@@ -1,31 +1,31 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Redeploy runbook/script hardening for repeatable backend+frontend redeploy (no functional app changes)",
+  "title": "Frontend-side redeploy verification and UI manual-check support",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Ensure the existing redeploy runbook/scripts reliably rebuild, upgrade, regenerate bindings, rebuild the frontend, deploy, and verify without introducing functional code changes.",
+      "id": "REQ-2",
+      "summary": "Ensure the existing redeploy and post-deploy verification flow remains reliable and includes clear guidance for manual UI verification after redeploy.",
       "acceptanceCriteria": [
-        "Running the redeploy process completes without errors (backend build, backend upgrade, binding generation, frontend build, frontend deploy).",
-        "Post-deployment verification checks pass: backend canister status is Running, frontend canister status is Running, and the backend query call `listRooms` succeeds.",
-        "No functional code changes are introduced as part of the redeploy."
+        "Run the existing automated redeploy flow (frontend/scripts/redeploy.sh) successfully without errors.",
+        "Run the existing post-deploy verification (frontend/scripts/redeploy-verify.sh) successfully; it confirms both canisters are running and the backend query test (listRooms) succeeds.",
+        "After redeploy, manually verify from the UI that entering a room and using the reload flow no longer produces backend errors in normal conditions."
       ],
       "file_operations": [
         {
-          "path": "frontend/REDEPLOY.md",
-          "operation": "modify",
-          "description": "Complete and align the redeploy runbook so it explicitly references and matches the existing redeploy scripts (redeploy + verification), calls out prerequisites, and reiterates the constraint that this is a deployment-only operation with no functional changes."
-        },
-        {
           "path": "frontend/scripts/redeploy.sh",
           "operation": "modify",
-          "description": "Harden the redeploy automation for repeatable runs (e.g., stricter bash flags, clearer logging, and consistent sequencing of build/upgrade/generate/build/deploy) while preserving the same redeploy intent and avoiding any application logic changes."
+          "description": "Harden the script's ergonomics for repeated redeploy runs (e.g., clearer failure context, consistent working-directory handling) while preserving the existing redeploy sequence and behavior required by REQ-2."
         },
         {
           "path": "frontend/scripts/redeploy-verify.sh",
           "operation": "modify",
-          "description": "Fix verification flow robustness so the backend `listRooms` check is correctly evaluated under strict error handling (avoid brittle `$?` checks after command substitution with `set -e`), and keep output focused on the required running-status checks and the `listRooms` call."
+          "description": "Enhance post-deploy verification output to more explicitly confirm the expected checks (both canisters running + listRooms query succeeds) and to clearly direct the tester to the UI reload flow verification step after the scripts pass."
+        },
+        {
+          "path": "frontend/REDEPLOY.md",
+          "operation": "modify",
+          "description": "Update the redeploy runbook to reflect the exact redeploy + verify flow, including an explicit manual UI checklist step for entering a room and using the message reload flow to confirm the backend fix is effective after redeploy."
         }
       ]
     }

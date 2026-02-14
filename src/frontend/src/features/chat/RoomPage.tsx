@@ -14,6 +14,7 @@ import type { MessageId, PublicMessage } from '../../backend';
 import type { ChatMessage } from './types/chatMessage';
 import { scrollToBottom, isNearBottom, getScrollPosition, setScrollPosition, getScrollViewport } from './utils/scrollViewport';
 import { filterRecentMessages } from './utils/messageVisibility';
+import { extractErrorMessage } from './utils/messageErrors';
 
 interface RoomPageProps {
   roomId: string;
@@ -41,12 +42,26 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
     data: messages, 
     isLoading: isLoadingMessages, 
     isError, 
+    error,
     refetch,
     isFetching,
   } = useRoomMessages(
     roomId,
     roomExists === true
   );
+
+  // Extract user-friendly error message
+  const errorMessage = useMemo(() => {
+    if (!isError || !error) return '';
+    return extractErrorMessage(error);
+  }, [isError, error]);
+
+  // Check if the error indicates the room doesn't exist
+  const isRoomNotFoundError = useMemo(() => {
+    return errorMessage.toLowerCase().includes('room') && 
+           (errorMessage.toLowerCase().includes('not exist') || 
+            errorMessage.toLowerCase().includes('no longer exists'));
+  }, [errorMessage]);
 
   // Filter messages to only show those within the last hour
   const recentMessages = useMemo(() => {
@@ -277,13 +292,40 @@ export function RoomPage({ roomId, onLeaveRoom }: RoomPageProps) {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : isError ? (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                Failed to load messages. Please try again.
-              </AlertDescription>
-            </Alert>
+            <div className="space-y-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error Loading Messages</AlertTitle>
+                <AlertDescription className="mt-2">
+                  {errorMessage}
+                </AlertDescription>
+              </Alert>
+              <div className="flex justify-center gap-2">
+                <Button 
+                  onClick={handleReload} 
+                  variant="default"
+                  disabled={isFetching}
+                >
+                  {isFetching ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Retrying...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Retry
+                    </>
+                  )}
+                </Button>
+                {isRoomNotFoundError && (
+                  <Button onClick={onLeaveRoom} variant="outline">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Lobby
+                  </Button>
+                )}
+              </div>
+            </div>
           ) : visibleMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               {hasMessagesButAllOld ? (

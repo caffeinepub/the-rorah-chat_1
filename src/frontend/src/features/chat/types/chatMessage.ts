@@ -1,4 +1,4 @@
-import type { PublicMessage, MessageId, RoomId, UserId, Media } from '../../../backend';
+import type { PublicMessage, MessageId, RoomId, UserId, ExternalBlob } from '../../../backend';
 
 /**
  * Client-side status for optimistic message handling
@@ -12,7 +12,7 @@ export interface MessageSendPayload {
   userId: UserId;
   roomId: RoomId;
   content: string;
-  media: Media | null;
+  media: ExternalBlob | null;
   replyTo: MessageId | null;
 }
 

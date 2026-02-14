@@ -3,14 +3,16 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Users are encountering backend errors; needs investigation, fix, and app redeploy."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-perform-a-redeploy-by-rebuilding-and-upgrading-the-backend-canister-regenerating-backend-bindings-rebuilding-the-frontend-and-deploying-the-frontend-canister-following-the-existing-redeploy-runbook-scripts",
-      "title": "Perform a redeploy by rebuilding and upgrading the backend canister, regenerating backend bindings, rebuilding the frontend, and deploying the frontend canister, following the existing redeploy runbook/scripts.",
+      "id": "feature-redeploy-the-application-after-the-backend-fix-and-verify-the-deployment-using-the-existing-redeploy-scripts-and-checks-ensuring-the-backend-and-frontend-canisters-are-running-and-a-basic-backend-query-succeeds",
+      "title": "Redeploy the application after the backend fix and verify the deployment using the existing redeploy scripts and checks, ensuring the backend and frontend canisters are running and a basic backend query succeeds.",
       "reqIds": [
-        "REQ-1"
+        "REQ-2"
       ],
       "version": 1
     }
@@ -18,12 +20,14 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Automatic hiding of messages older than an hour (with ability to refine behavior)",
-      "reqIds": [],
+      "summary": "Investigate and fix the Motoko backend runtime errors that users encounter during normal app usage (especially when reloading room messages), and make backend message retrieval/posting resilient for rooms that exist but have missing/partial message state (e.g., room present in the room set but no initialized message list).",
+      "reqIds": [
+        "REQ-1"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Redeploy backend and frontend canisters (no functional changes)",
+  "projectName": "Fix backend runtime errors affecting message reload and redeploy",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

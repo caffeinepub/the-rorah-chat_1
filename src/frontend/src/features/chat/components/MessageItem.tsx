@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { MoreVertical, Edit, Trash, Reply, Check, X, Download, Loader2, RefreshCw, AlertCircle, FileQuestion } from 'lucide-react';
 import { toast } from 'sonner';
-import type { PublicMessage, RoomId, UserId, MessageId } from '../../../backend';
+import type { PublicMessage, RoomId, UserId, MessageId, ExternalBlob } from '../../../backend';
 import type { ChatMessage } from '../types/chatMessage';
 import { cn } from '@/lib/utils';
 import { getDisplayName } from '../utils/displayName';
@@ -71,13 +71,18 @@ export const MessageItem = memo(function MessageItem({
       return message.media;
     }
     
-    // Convert array-like objects to Uint8Array
-    try {
-      return new Uint8Array(message.media as ArrayLike<number>);
-    } catch (error) {
-      console.error('Failed to normalize media bytes:', error);
+    // If it's an ExternalBlob, we need to handle it asynchronously
+    // For now, we'll return undefined and let the component handle it via getBytes()
+    // The useAttachmentObjectUrl hook will handle ExternalBlob properly
+    if (typeof message.media === 'object' && 'getBytes' in message.media) {
+      // This is an ExternalBlob - we can't synchronously convert it
+      // The useAttachmentObjectUrl hook will handle this
       return undefined;
     }
+    
+    // This shouldn't happen with proper typing, but handle it gracefully
+    console.warn('Unexpected media type:', typeof message.media);
+    return undefined;
   }, [message.media]);
 
   // Detect MIME type using lightweight detection with memoization

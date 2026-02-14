@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { Room, PublicMessage, MessageId, RoomId, UserId, Media } from '../backend';
+import type { Room, PublicMessage, MessageId, RoomId, UserId, ExternalBlob } from '../backend';
 import type { ChatMessage, MessageSendPayload } from '../features/chat/types/chatMessage';
 import { sortMessages } from '../features/chat/utils/messageOrdering';
 import { extractErrorMessage } from '../features/chat/utils/messageErrors';
@@ -112,7 +112,11 @@ export function usePostMessage() {
   return useMutation<PublicMessage, Error, MessageSendPayload & { clientId?: string }, PostMessageContext>({
     mutationFn: async ({ userId, roomId, content, media, replyTo }) => {
       if (!actor) throw new Error('Actor not initialized');
-      return actor.postMessage(userId, roomId, content, media, replyTo);
+      const result = await actor.postMessage(userId, roomId, content, media, replyTo);
+      if (result === null) {
+        throw new Error('Room does not exist');
+      }
+      return result;
     },
     
     // Optimistic update: add message immediately
@@ -228,7 +232,11 @@ export function useEditMessage() {
       newContent: string;
     }) => {
       if (!actor) throw new Error('Actor not initialized');
-      return actor.editMessage(userId, roomId, messageId, newContent);
+      const result = await actor.editMessage(userId, roomId, messageId, newContent);
+      if (result === null) {
+        throw new Error('Failed to edit message. The room or message may not exist.');
+      }
+      return result;
     },
     onSuccess: (data, variables) => {
       // Directly update the message in cache
@@ -292,7 +300,11 @@ export function useReactToMessage() {
       emoji: string;
     }) => {
       if (!actor) throw new Error('Actor not initialized');
-      return actor.reactToMessage(userId, roomId, messageId, emoji);
+      const result = await actor.reactToMessage(userId, roomId, messageId, emoji);
+      if (result === null) {
+        throw new Error('Failed to add reaction. The room or message may not exist.');
+      }
+      return result;
     },
     onSuccess: (data, variables) => {
       // Directly update the message in cache

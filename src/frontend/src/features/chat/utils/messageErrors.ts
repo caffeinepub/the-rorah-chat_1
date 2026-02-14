@@ -29,13 +29,24 @@ export function extractErrorMessage(error: unknown): string {
     }
     
     // Network errors
-    if (message.includes('network') || message.includes('fetch')) {
-      return 'Network error. Please check your connection.';
+    if (message.includes('network') || message.includes('Network')) {
+      return 'Network error. Please check your connection and try again.';
+    }
+    if (message.includes('fetch') || message.includes('Failed to fetch')) {
+      return 'Connection failed. Please check your internet connection.';
+    }
+    if (message.includes('timeout') || message.includes('timed out')) {
+      return 'Request timed out. Please try again.';
     }
     
     // Actor initialization
     if (message.includes('Actor not initialized')) {
       return 'Connection lost. Please refresh the page.';
+    }
+    
+    // Canister errors
+    if (message.includes('canister') || message.includes('Canister')) {
+      return 'Backend service error. Please try again in a moment.';
     }
     
     // Return the original message if it's reasonably short and clear
@@ -50,5 +61,5 @@ export function extractErrorMessage(error: unknown): string {
   }
   
   // Default fallback
-  return 'Failed to send message. Please try again.';
+  return 'An unexpected error occurred. Please try again.';
 }

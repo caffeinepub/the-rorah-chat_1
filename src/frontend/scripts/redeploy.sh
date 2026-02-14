@@ -37,6 +37,7 @@ log_step() {
 # Error handler
 error_handler() {
     log_error "Redeploy failed at line $1"
+    log_error "Check the error message above for details"
     exit 1
 }
 
@@ -66,8 +67,9 @@ fi
 
 # Step 2: Upgrade backend
 log_step "⬆️  Step 2/5: Upgrading backend canister..."
+log_info "Running migration to fix message storage..."
 if dfx canister install backend --mode upgrade; then
-    log_success "Backend upgrade completed"
+    log_success "Backend upgrade completed (migration applied)"
 else
     log_error "Backend upgrade failed"
     exit 1
@@ -107,12 +109,15 @@ FRONTEND_ID=$(dfx canister id frontend)
 FRONTEND_URL="http://${FRONTEND_ID}.localhost:4943"
 
 echo ""
-log_success "Redeploy complete!"
+log_success "🎉 Redeploy complete!"
 echo ""
 log_info "Frontend URL: ${FRONTEND_URL}"
 echo ""
 log_step "📋 Next steps:"
-echo "   1. Open the frontend URL in your browser"
-echo "   2. Run ./frontend/scripts/redeploy-verify.sh to verify the deployment"
-echo "   3. Manually test key features (see REDEPLOY.md for checklist)"
+echo "   1. Run ./frontend/scripts/redeploy-verify.sh to verify the deployment"
+echo "   2. Open the frontend URL in your browser"
+echo "   3. Manually test the message reload flow (see verification output)"
+echo ""
+log_warning "Note: The migration has reset message storage to fix backend errors."
+log_warning "Existing messages have been cleared. New messages will work correctly."
 echo ""

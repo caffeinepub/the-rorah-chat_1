@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Redeploy the backend and frontend canisters by rebuilding and upgrading/deploying them, without introducing any functional code changes.
+**Goal:** Fix Motoko backend runtime errors affecting room message reload and redeploy the app with verified, stable message operations.
 
 **Planned changes:**
-- Rebuild and upgrade the backend canister using the existing redeploy runbook/scripts.
-- Regenerate backend bindings.
-- Rebuild the frontend and deploy the frontend canister using the existing redeploy runbook/scripts.
-- Run post-deployment verification checks (canister statuses and `listRooms` query).
+- Investigate and resolve backend traps/errors in message-related methods (getMessages, postMessage, editMessage, deleteMessage, reactToMessage) during normal usage and reload flows.
+- Make message retrieval/posting resilient for rooms that exist but have missing/uninitialized message state by self-initializing the message list and returning valid responses (e.g., empty messages array when none exist).
+- Preserve existing room validation behavior (validateRoom continues to reject empty room IDs and non-existent rooms).
+- Run the existing redeploy and post-deploy verification scripts and confirm via UI that room entry and message reload no longer produce backend errors.
 
-**User-visible outcome:** The application is redeployed successfully (backend and frontend canisters running), and core verification (including `listRooms`) works as before with no functional behavior changes.
+**User-visible outcome:** Users can enter rooms and reload/view/post/edit/delete/react to messages without backend errors, and the updated app is redeployed and verified as running correctly.

@@ -1,41 +1,62 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-14T10:35:54.317Z",
-  "summary": "REQ-1 asks for a deployment-only redeploy (rebuild/upgrade backend, regenerate bindings, rebuild/deploy frontend) with no functional code changes. The diff adds redeploy scripts/runbook that match the redeploy steps, but it also includes substantial functional changes in backend/main.mo and appears to introduce/describe multiple new frontend behaviors, which conflicts with the “no functional changes” constraint/AC.",
+  "generatedAt": "2026-02-14T13:39:59.220Z",
+  "summary": "Backend changes add null-safe handling for missing per-room message lists in getMessages/postMessage and introduce a migration that rebuilds the messages map for all rooms. Redeploy scripts/runbook and several frontend chat/UI changes were also added/modified. However, based on the truncated backend diff, it is not fully evidenced that all message-related methods (edit/delete/react) both avoid traps and persistently self-heal missing message state as required.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "No functional code changes are introduced as part of the redeploy.",
-      "reason": "The diff shows substantive Motoko code changes in the backend (new types, storage mixin include, room/message logic changes), indicating functional modifications rather than a deployment-only change.",
+      "requirement": "Backend canister no longer traps/errors when calling message-related methods (e.g., getMessages, postMessage, editMessage, deleteMessage, reactToMessage) for any roomId present in backend state.",
+      "reason": "The diff shows null-safe handling for getMessages and postMessage, and begins similar handling for editMessage, but the file is truncated before showing the full implementations for editMessage/deleteMessage/reactToMessage and whether they are fully trap-safe.",
       "evidence": [
-        "backend/main.mo"
+        "backend/main.mo (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "If a room exists but its message list entry is missing/uninitialized, the backend self-heals (initializes the message list) and returns a valid response (e.g., getMessages returns an empty array, postMessage succeeds and persists the message).",
+      "reason": "In getMessages/postMessage, missing state is handled by using List.empty(), but it is not clearly evidenced that getMessages persistently initializes (writes back) the empty list when missing; and the truncated diff does not confirm this self-healing behavior across editMessage/deleteMessage/reactToMessage.",
+      "evidence": [
+        "backend/main.mo (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Backend functional changes to chat domain logic (rooms/messages/reactions/media types and operations) and inclusion of blob-storage mixin.",
-      "reason": "BuildRequest explicitly states redeploy only with no functional code changes; these code changes go beyond redeploy scripting/runbook updates.",
+      "description": "Introduced a backend migration that rebuilds/reset the entire messages map for all rooms (effectively clearing existing messages).",
+      "reason": "The BuildRequest only allowed adding backend/migration.mo if required to upgrade stable state to fix errors; it did not request resetting message history as part of the fix.",
       "evidence": [
-        "backend/main.mo"
+        "backend/migration.mo",
+        "backend/main.mo (with migration = Migration.run)",
+        "frontend/REDEPLOY.md (states existing messages will be cleared)",
+        "frontend/scripts/redeploy.sh (logs: \"migration has reset message storage\")"
       ]
     },
     {
-      "description": "Frontend feature/behavior changes described across many files (e.g., disabled automatic polling, manual reload, 1-hour message visibility filter, file upload/preview/download handling, reactions UI behavior, theme system changes).",
-      "reason": "BuildRequest non-goals prohibit adding/changing application features during redeploy; the diff summary indicates multiple product/UX behaviors beyond deployment-only work.",
+      "description": "Added/expanded frontend optimistic messaging and client-side message status tracking (sending/failed/sent), structural sharing, media fingerprint equality, and disabled automatic polling in favor of manual reload UI.",
+      "reason": "REQ-1 focuses on fixing backend runtime errors and resilience; these broader frontend behavioral/performance features are not explicitly requested for the fix or redeploy verification.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/features/chat/types/chatMessage.ts",
+        "frontend/src/features/chat/utils/messageEquality.ts",
+        "frontend/src/hooks/useQueries.ts (truncated)",
+        "frontend/src/features/chat/components/MessageComposer.tsx (truncated)",
+        "frontend/src/features/chat/components/MessageItem.tsx (truncated)"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
     "frontend/REDEPLOY.md",
     "frontend/scripts/redeploy-verify.sh",
     "frontend/scripts/redeploy.sh",
+    "frontend/src/features/chat/components/MessageComposer.tsx",
+    "frontend/src/features/chat/components/MessageItem.tsx",
+    "frontend/src/features/chat/types/chatMessage.ts",
+    "frontend/src/features/chat/utils/messageEquality.ts",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }
